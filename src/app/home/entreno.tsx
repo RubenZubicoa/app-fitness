@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { WorkoutHistoryCard } from '@/components/training/workout-history-card';
 import { BarChart } from '@/components/charts/bar-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -13,7 +14,7 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { adherenceWeeks, routine, workoutWeek } from '@/data/mock';
+import { adherenceWeeks, routine, workoutHistory, workoutWeek } from '@/data/mock';
 
 export default function EntrenoScreen() {
   const theme = useTheme();
@@ -124,6 +125,29 @@ export default function EntrenoScreen() {
       </View>
 
       <View>
+        <SectionHeader
+          title="Histórico de entrenamientos"
+          actionLabel="Ver todo"
+          onAction={() => router.push('/historico-entreno' as Href)}
+        />
+        <View style={styles.historyList}>
+          {workoutHistory.slice(0, 3).map((entry) => (
+            <WorkoutHistoryCard
+              key={entry.id}
+              entry={entry}
+              compact
+              onPress={() =>
+                router.push({
+                  pathname: '/historico-entreno-detalle',
+                  params: { id: entry.id },
+                } as Href)
+              }
+            />
+          ))}
+        </View>
+      </View>
+
+      <View>
         <SectionHeader title="Adherencia histórica" />
         <Card>
           <ThemedText type="small" themeColor="textSecondary" style={styles.adherenceNote}>
@@ -185,5 +209,6 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.one,
   },
   exName: { flex: 1 },
+  historyList: { gap: Spacing.three },
   adherenceNote: { marginBottom: Spacing.two },
 });

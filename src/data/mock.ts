@@ -208,6 +208,337 @@ export const adherenceWeeks = [
   { label: 'S6', value: 100, highlight: true },
 ];
 
+export type StrengthSetLog = {
+  set: number;
+  weightKg: number;
+  reps: number;
+};
+
+export type CardioLog = {
+  km: number;
+  speedKmh: number;
+  avgHr: number;
+};
+
+export type ExerciseLog = {
+  name: string;
+  type: ExerciseType;
+  strengthSets?: StrengthSetLog[];
+  cardio?: CardioLog;
+};
+
+export type WorkoutHistoryEntry = {
+  id: string;
+  week: number;
+  date: string;
+  day: string;
+  focus: string;
+  duration: string;
+  durationMinutes: number;
+  exercises: ExerciseLog[];
+};
+
+/** Histórico de sesiones completadas (datos estáticos de ejemplo). */
+export const workoutHistory: WorkoutHistoryEntry[] = [
+  {
+    id: 'w6-dia-c',
+    week: 6,
+    date: 'Lun 26 may',
+    day: 'Día C',
+    focus: 'Full body',
+    duration: '52 min',
+    durationMinutes: 52,
+    exercises: [
+      {
+        name: 'Hip thrust',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 80, reps: 10 },
+          { set: 2, weightKg: 80, reps: 10 },
+          { set: 3, weightKg: 85, reps: 9 },
+          { set: 4, weightKg: 85, reps: 8 },
+        ],
+      },
+      {
+        name: 'Dominadas asistidas',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 7 },
+          { set: 2, weightKg: 0, reps: 7 },
+          { set: 3, weightKg: 0, reps: 6 },
+        ],
+      },
+      {
+        name: 'Fondos',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 10 },
+          { set: 2, weightKg: 0, reps: 9 },
+          { set: 3, weightKg: 0, reps: 9 },
+        ],
+      },
+      {
+        name: 'Plancha',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 42 },
+          { set: 2, weightKg: 0, reps: 45 },
+          { set: 3, weightKg: 0, reps: 43 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w6-dia-b',
+    week: 6,
+    date: 'Vie 23 may',
+    day: 'Día B',
+    focus: 'Tren inferior',
+    duration: '58 min',
+    durationMinutes: 58,
+    exercises: [
+      {
+        name: 'Sentadilla',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 70, reps: 8 },
+          { set: 2, weightKg: 70, reps: 8 },
+          { set: 3, weightKg: 75, reps: 7 },
+          { set: 4, weightKg: 75, reps: 6 },
+        ],
+      },
+      {
+        name: 'Peso muerto rumano',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 60, reps: 10 },
+          { set: 2, weightKg: 60, reps: 10 },
+          { set: 3, weightKg: 62.5, reps: 9 },
+          { set: 4, weightKg: 62.5, reps: 9 },
+        ],
+      },
+      {
+        name: 'Zancadas',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 20, reps: 12 },
+          { set: 2, weightKg: 20, reps: 12 },
+          { set: 3, weightKg: 22.5, reps: 11 },
+        ],
+      },
+      {
+        name: 'Gemelos',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 40, reps: 15 },
+          { set: 2, weightKg: 40, reps: 14 },
+          { set: 3, weightKg: 45, reps: 13 },
+          { set: 4, weightKg: 45, reps: 12 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w6-dia-a',
+    week: 6,
+    date: 'Mié 21 may',
+    day: 'Día A',
+    focus: 'Tren superior',
+    duration: '54 min',
+    durationMinutes: 54,
+    exercises: [
+      {
+        name: 'Press banca',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 50, reps: 10 },
+          { set: 2, weightKg: 52.5, reps: 9 },
+          { set: 3, weightKg: 52.5, reps: 9 },
+          { set: 4, weightKg: 55, reps: 8 },
+        ],
+      },
+      {
+        name: 'Remo con barra',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 45, reps: 10 },
+          { set: 2, weightKg: 47.5, reps: 10 },
+          { set: 3, weightKg: 47.5, reps: 9 },
+          { set: 4, weightKg: 50, reps: 8 },
+        ],
+      },
+      {
+        name: 'Press militar',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 30, reps: 10 },
+          { set: 2, weightKg: 32.5, reps: 9 },
+          { set: 3, weightKg: 32.5, reps: 8 },
+        ],
+      },
+      {
+        name: 'Curl bíceps',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 12, reps: 12 },
+          { set: 2, weightKg: 12, reps: 11 },
+          { set: 3, weightKg: 14, reps: 10 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w5-dia-d',
+    week: 5,
+    date: 'Lun 19 may',
+    day: 'Día D',
+    focus: 'Core y cardio',
+    duration: '47 min',
+    durationMinutes: 47,
+    exercises: [
+      {
+        name: 'Elevaciones de piernas',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 12 },
+          { set: 2, weightKg: 0, reps: 11 },
+          { set: 3, weightKg: 0, reps: 11 },
+          { set: 4, weightKg: 0, reps: 10 },
+        ],
+      },
+      {
+        name: 'Rueda abdominal',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 10 },
+          { set: 2, weightKg: 0, reps: 9 },
+          { set: 3, weightKg: 0, reps: 8 },
+        ],
+      },
+      {
+        name: 'Carrera continua',
+        type: 'cardio',
+        cardio: { km: 5.2, speedKmh: 9.8, avgHr: 148 },
+      },
+      {
+        name: 'Cinta / HIIT',
+        type: 'cardio',
+        cardio: { km: 2.8, speedKmh: 11.2, avgHr: 162 },
+      },
+    ],
+  },
+  {
+    id: 'w5-dia-c',
+    week: 5,
+    date: 'Vie 16 may',
+    day: 'Día C',
+    focus: 'Full body',
+    duration: '51 min',
+    durationMinutes: 51,
+    exercises: [
+      {
+        name: 'Hip thrust',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 75, reps: 10 },
+          { set: 2, weightKg: 75, reps: 10 },
+          { set: 3, weightKg: 80, reps: 9 },
+          { set: 4, weightKg: 80, reps: 8 },
+        ],
+      },
+      {
+        name: 'Dominadas asistidas',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 6 },
+          { set: 2, weightKg: 0, reps: 6 },
+          { set: 3, weightKg: 0, reps: 5 },
+        ],
+      },
+      {
+        name: 'Fondos',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 9 },
+          { set: 2, weightKg: 0, reps: 8 },
+          { set: 3, weightKg: 0, reps: 8 },
+        ],
+      },
+      {
+        name: 'Plancha',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 0, reps: 40 },
+          { set: 2, weightKg: 0, reps: 42 },
+          { set: 3, weightKg: 0, reps: 40 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w4-dia-a',
+    week: 4,
+    date: 'Mié 7 may',
+    day: 'Día A',
+    focus: 'Tren superior',
+    duration: '56 min',
+    durationMinutes: 56,
+    exercises: [
+      {
+        name: 'Press banca',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 47.5, reps: 9 },
+          { set: 2, weightKg: 50, reps: 8 },
+          { set: 3, weightKg: 50, reps: 8 },
+          { set: 4, weightKg: 52.5, reps: 7 },
+        ],
+      },
+      {
+        name: 'Remo con barra',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 42.5, reps: 10 },
+          { set: 2, weightKg: 45, reps: 9 },
+          { set: 3, weightKg: 45, reps: 9 },
+          { set: 4, weightKg: 47.5, reps: 8 },
+        ],
+      },
+      {
+        name: 'Press militar',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 27.5, reps: 10 },
+          { set: 2, weightKg: 30, reps: 9 },
+          { set: 3, weightKg: 30, reps: 8 },
+        ],
+      },
+      {
+        name: 'Curl bíceps',
+        type: 'strength',
+        strengthSets: [
+          { set: 1, weightKg: 10, reps: 12 },
+          { set: 2, weightKg: 12, reps: 11 },
+          { set: 3, weightKg: 12, reps: 10 },
+        ],
+      },
+    ],
+  },
+];
+
+/** Agrupa el histórico por semana (orden descendente). */
+export function groupWorkoutHistoryByWeek(entries: WorkoutHistoryEntry[]) {
+  const map = new Map<number, WorkoutHistoryEntry[]>();
+  for (const entry of entries) {
+    const list = map.get(entry.week) ?? [];
+    list.push(entry);
+    map.set(entry.week, list);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([week, items]) => ({ week, items }));
+}
+
 export const reviews = [
   {
     title: 'Revisión semanal · Semana 7',

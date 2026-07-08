@@ -32,14 +32,6 @@ const menuItems = [
     badge: '12 recursos',
   },
   {
-    title: 'Comunidad',
-    subtitle: 'Entrenos, pasos y retos compartidos',
-    icon: 'people-outline',
-    href: '/social',
-    tone: 'teal',
-    badge: 'Nuevo reto',
-  },
-  {
     title: 'Resultados finales',
     subtitle: 'Comparativa y gráfica al terminar',
     icon: 'trophy-outline',
@@ -52,7 +44,6 @@ const menuItems = [
 const toneColors = {
   primary: { color: Brand.blue, bg: '#E4EEFD' },
   gold: { color: Brand.gold, bg: '#FBF0D8' },
-  teal: { color: Brand.teal, bg: '#DCF5F1' },
   purple: { color: Brand.purple, bg: '#EDE7FE' },
 };
 
@@ -66,7 +57,7 @@ export default function MasScreen() {
         <GradientHeader
           eyebrow="Más opciones"
           title="Tu espacio"
-          subtitle="Revisiones, formación y comunidad"
+          subtitle="Revisiones, formación y resultados"
           gradient={Brand.gradientViolet}
         />
       }>
