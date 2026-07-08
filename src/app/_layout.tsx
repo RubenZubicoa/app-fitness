@@ -40,6 +40,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="onboarding" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="home" />
+          <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="revisiones" />
           <Stack.Screen name="videoteca" />
           <Stack.Screen name="social" />

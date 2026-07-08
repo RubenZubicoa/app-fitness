@@ -113,45 +113,88 @@ export const supplements: {
   { name: 'Vitamina D', dose: '1 cáp', when: 'Desayuno', icon: 'sunny-outline' },
 ];
 
-export const routine = [
+export type ExerciseType = 'strength' | 'cardio';
+
+export type Exercise = {
+  name: string;
+  /** Descripción de series, p. ej. "4 x 8-10" (fuerza) o "15 min" (cardio). */
+  sets: string;
+  rest: string;
+  type: ExerciseType;
+  /** Nº de series a registrar (solo fuerza). */
+  seriesCount?: number;
+  /** Rango de repeticiones objetivo por serie (solo fuerza). */
+  repRange?: { min: number; max: number };
+  /** Unidad del rango: repeticiones o segundos (p. ej. plancha). */
+  repUnit?: 'reps' | 's';
+  /** Objetivos de cardio. */
+  targetKm?: number;
+};
+
+/** Formatea el rango de reps/segundos para mostrar en UI. */
+export function formatRepRange(exercise: Exercise): string {
+  if (!exercise.repRange) return '—';
+  const { min, max } = exercise.repRange;
+  const suffix = exercise.repUnit === 's' ? 's' : '';
+  if (min === max) return `${min}${suffix}`;
+  return `${min}-${max}${suffix}`;
+}
+
+export type RoutineDay = {
+  day: string;
+  focus: string;
+  done: boolean;
+  duration: string;
+  exercises: Exercise[];
+};
+
+export const routine: RoutineDay[] = [
   {
-    day: 'Día A · Tren superior',
+    day: 'Día A',
+    focus: 'Tren superior',
     done: true,
+    duration: '55 min',
     exercises: [
-      { name: 'Press banca', sets: '4 x 8', rest: '90s' },
-      { name: 'Remo con barra', sets: '4 x 10', rest: '90s' },
-      { name: 'Press militar', sets: '3 x 10', rest: '60s' },
-      { name: 'Curl bíceps', sets: '3 x 12', rest: '45s' },
+      { name: 'Press banca', sets: '4 x 8-10', rest: '90s', type: 'strength', seriesCount: 4, repRange: { min: 8, max: 10 } },
+      { name: 'Remo con barra', sets: '4 x 8-12', rest: '90s', type: 'strength', seriesCount: 4, repRange: { min: 8, max: 12 } },
+      { name: 'Press militar', sets: '3 x 8-10', rest: '60s', type: 'strength', seriesCount: 3, repRange: { min: 8, max: 10 } },
+      { name: 'Curl bíceps', sets: '3 x 10-12', rest: '45s', type: 'strength', seriesCount: 3, repRange: { min: 10, max: 12 } },
     ],
   },
   {
-    day: 'Día B · Tren inferior',
+    day: 'Día B',
+    focus: 'Tren inferior',
     done: true,
+    duration: '60 min',
     exercises: [
-      { name: 'Sentadilla', sets: '4 x 8', rest: '120s' },
-      { name: 'Peso muerto rumano', sets: '4 x 10', rest: '90s' },
-      { name: 'Zancadas', sets: '3 x 12', rest: '60s' },
-      { name: 'Gemelos', sets: '4 x 15', rest: '45s' },
+      { name: 'Sentadilla', sets: '4 x 6-8', rest: '120s', type: 'strength', seriesCount: 4, repRange: { min: 6, max: 8 } },
+      { name: 'Peso muerto rumano', sets: '4 x 8-10', rest: '90s', type: 'strength', seriesCount: 4, repRange: { min: 8, max: 10 } },
+      { name: 'Zancadas', sets: '3 x 10-12', rest: '60s', type: 'strength', seriesCount: 3, repRange: { min: 10, max: 12 } },
+      { name: 'Gemelos', sets: '4 x 12-15', rest: '45s', type: 'strength', seriesCount: 4, repRange: { min: 12, max: 15 } },
     ],
   },
   {
-    day: 'Día C · Full body',
+    day: 'Día C',
+    focus: 'Full body',
     done: true,
+    duration: '50 min',
     exercises: [
-      { name: 'Hip thrust', sets: '4 x 10', rest: '90s' },
-      { name: 'Dominadas asistidas', sets: '3 x 8', rest: '90s' },
-      { name: 'Fondos', sets: '3 x 10', rest: '60s' },
-      { name: 'Plancha', sets: '3 x 45s', rest: '30s' },
+      { name: 'Hip thrust', sets: '4 x 8-12', rest: '90s', type: 'strength', seriesCount: 4, repRange: { min: 8, max: 12 } },
+      { name: 'Dominadas asistidas', sets: '3 x 6-8', rest: '90s', type: 'strength', seriesCount: 3, repRange: { min: 6, max: 8 } },
+      { name: 'Fondos', sets: '3 x 8-12', rest: '60s', type: 'strength', seriesCount: 3, repRange: { min: 8, max: 12 } },
+      { name: 'Plancha', sets: '3 x 40-45s', rest: '30s', type: 'strength', seriesCount: 3, repRange: { min: 40, max: 45 }, repUnit: 's' },
     ],
   },
   {
-    day: 'Día D · Core y cardio',
+    day: 'Día D',
+    focus: 'Core y cardio',
     done: false,
+    duration: '45 min',
     exercises: [
-      { name: 'Elevaciones de piernas', sets: '4 x 12', rest: '45s' },
-      { name: 'Rueda abdominal', sets: '3 x 10', rest: '60s' },
-      { name: 'Russian twist', sets: '3 x 20', rest: '45s' },
-      { name: 'Cinta / HIIT', sets: '15 min', rest: '—' },
+      { name: 'Elevaciones de piernas', sets: '4 x 10-12', rest: '45s', type: 'strength', seriesCount: 4, repRange: { min: 10, max: 12 } },
+      { name: 'Rueda abdominal', sets: '3 x 8-10', rest: '60s', type: 'strength', seriesCount: 3, repRange: { min: 8, max: 10 } },
+      { name: 'Carrera continua', sets: '5 km', rest: '—', type: 'cardio', targetKm: 5 },
+      { name: 'Cinta / HIIT', sets: '15 min', rest: '—', type: 'cardio', targetKm: 3 },
     ],
   },
 ];

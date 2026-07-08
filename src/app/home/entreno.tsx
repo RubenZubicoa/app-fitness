@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { BarChart } from '@/components/charts/bar-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
@@ -15,6 +17,7 @@ import { adherenceWeeks, routine, workoutWeek } from '@/data/mock';
 
 export default function EntrenoScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const completed = routine.filter((d) => d.done).length;
   const adherence = Math.round((completed / routine.length) * 100);
 
@@ -68,7 +71,7 @@ export default function EntrenoScreen() {
       <View>
         <SectionHeader title="Rutina actual" actionLabel="Ver explicación" />
         <View style={styles.days}>
-          {routine.map((day) => (
+          {routine.map((day, index) => (
             <Card key={day.day} style={styles.dayCard}>
               <View style={styles.dayHeader}>
                 <View style={styles.dayLeft}>
@@ -81,10 +84,12 @@ export default function EntrenoScreen() {
                     ]}>
                     {day.done && <Ionicons name="checkmark" size={16} color="#0A1B33" />}
                   </View>
-                  <View>
-                    <ThemedText type="h3">{day.day}</ThemedText>
+                  <View style={styles.flex}>
+                    <ThemedText type="h3">
+                      {day.day} · {day.focus}
+                    </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {day.exercises.length} ejercicios
+                      {day.exercises.length} ejercicios · {day.duration}
                     </ThemedText>
                   </View>
                 </View>
@@ -93,7 +98,11 @@ export default function EntrenoScreen() {
               <View style={styles.exercises}>
                 {day.exercises.map((ex) => (
                   <View key={ex.name} style={styles.exerciseRow}>
-                    <Ionicons name="ellipse" size={6} color={theme.primary} />
+                    <Ionicons
+                      name={ex.type === 'cardio' ? 'heart' : 'ellipse'}
+                      size={ex.type === 'cardio' ? 12 : 6}
+                      color={theme.primary}
+                    />
                     <ThemedText type="body" style={styles.exName}>
                       {ex.name}
                     </ThemedText>
@@ -103,6 +112,12 @@ export default function EntrenoScreen() {
                   </View>
                 ))}
               </View>
+              <Button
+                title={day.done ? 'Repetir entrenamiento' : 'Iniciar entrenamiento'}
+                icon="play"
+                variant={day.done ? 'secondary' : 'primary'}
+                onPress={() => router.push(`/sesion-entreno?day=${index}`)}
+              />
             </Card>
           ))}
         </View>
@@ -140,6 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
     gap: 2,
   },
+  flex: { flex: 1 },
   days: { gap: Spacing.three },
   dayCard: { gap: Spacing.three },
   dayHeader: {
