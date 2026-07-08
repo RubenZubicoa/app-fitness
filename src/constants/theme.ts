@@ -41,7 +41,7 @@ export const Colors = {
     text: '#0E1B2E',
     textSecondary: '#5B6B85',
     textMuted: '#8A98AE',
-    background: '#EEF2F8',
+    background: '#F6F9FD',
     card: '#FFFFFF',
     cardElevated: '#FFFFFF',
     backgroundElement: '#F2F5FA',
@@ -133,13 +133,13 @@ export const Shadow = {
   card: Platform.select({
     ios: {
       shadowColor: '#0A1B33',
-      shadowOpacity: 0.08,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.1,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
     },
-    android: { elevation: 4 },
+    android: { elevation: 5 },
     default: {
-      boxShadow: '0px 8px 24px rgba(10, 27, 51, 0.10)',
+      boxShadow: '0px 10px 28px rgba(10, 27, 51, 0.12)',
     },
   }),
   floating: Platform.select({

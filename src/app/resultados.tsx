@@ -29,7 +29,7 @@ export default function ResultadosScreen() {
           title="Tu transformación"
           subtitle="Comparativa, gráficas y resultados finales"
           showBack
-          gradient={Brand.gradientGold}
+          gradient={Brand.gradientNavy}
           rightIcon="share-outline"
         />
       }>

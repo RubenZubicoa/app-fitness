@@ -18,10 +18,11 @@ type GradientHeaderProps = {
   showLogo?: boolean;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightPress?: () => void;
+  rightAccessory?: ReactNode;
   children?: ReactNode;
 };
 
-/** Cabecera con degradado a pantalla completa y contenido opcional. */
+/** Cabecera con degradado, capa decorativa y jerarquía tipográfica cuidada. */
 export function GradientHeader({
   title,
   subtitle,
@@ -31,47 +32,75 @@ export function GradientHeader({
   showLogo = false,
   rightIcon,
   onRightPress,
+  rightAccessory,
   children,
 }: GradientHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  // Sobre degradados dorados el acento dorado no contrasta: usamos blanco.
+  const isLightGradient = gradient[0].toUpperCase() === '#F2C868';
+  const accent = isLightGradient ? '#FFFFFF' : Brand.goldLight;
+
   return (
     <LinearGradient
       colors={[gradient[0], gradient[1]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      start={{ x: 0.1, y: 0 }}
+      end={{ x: 0.9, y: 1 }}
       style={[styles.header, { paddingTop: insets.top + Spacing.two }]}>
+      {/* Capa decorativa: orbes translúcidos para dar profundidad */}
+      <View pointerEvents="none" style={styles.decor}>
+        <View style={[styles.orb, styles.orbLarge]} />
+        <View style={[styles.orb, styles.orbRing]} />
+        <View style={[styles.orb, styles.orbSmall]} />
+      </View>
+
       <View style={styles.inner}>
-        {(showBack || rightIcon) && (
+        {showBack && (
           <View style={styles.topRow}>
-            {showBack ? (
-              <Pressable style={styles.iconButton} onPress={() => router.back()} hitSlop={8}>
-                <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
-              </Pressable>
-            ) : (
-              <View style={styles.iconButton} />
-            )}
-            {rightIcon && (
-              <Pressable style={styles.iconButton} onPress={onRightPress} hitSlop={8}>
-                <Ionicons name={rightIcon} size={20} color="#FFFFFF" />
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+              onPress={() => router.back()}
+              hitSlop={8}>
+              <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+            </Pressable>
           </View>
         )}
 
-        {showLogo && (
-          <BrandLogo variant="horizontal" width={200} style={styles.logo} />
+        {(showLogo || rightAccessory || rightIcon) && (
+          <View style={styles.logoRow}>
+            {showLogo ? (
+              <BrandLogo variant="horizontal" width={190} />
+            ) : (
+              <View style={styles.logoSpacer} />
+            )}
+            <View style={styles.rightGroup}>
+              {rightAccessory}
+              {rightIcon && (
+                <Pressable
+                  style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                  onPress={onRightPress}
+                  hitSlop={8}>
+                  <Ionicons name={rightIcon} size={20} color="#FFFFFF" />
+                </Pressable>
+              )}
+            </View>
+          </View>
         )}
 
         {eyebrow && (
-          <ThemedText type="label" style={styles.eyebrow}>
-            {eyebrow}
-          </ThemedText>
+          <View style={styles.eyebrowPill}>
+            <View style={[styles.eyebrowDot, { backgroundColor: accent }]} />
+            <ThemedText type="caption" style={styles.eyebrowText}>
+              {eyebrow}
+            </ThemedText>
+          </View>
         )}
+
         <ThemedText type="title" style={styles.title}>
           {title}
         </ThemedText>
+
         {subtitle && (
           <ThemedText type="body" style={styles.subtitle}>
             {subtitle}
@@ -90,33 +119,95 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: Radius.xl,
     borderBottomRightRadius: Radius.xl,
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  decor: {
+    ...StyleSheet.absoluteFill,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 200,
+  },
+  orbLarge: {
+    width: 220,
+    height: 220,
+    top: -80,
+    right: -60,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  orbRing: {
+    width: 130,
+    height: 130,
+    top: -20,
+    right: 60,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  orbSmall: {
+    width: 150,
+    height: 150,
+    bottom: -70,
+    left: -40,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   inner: {
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.three,
-    gap: Spacing.one,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   iconButton: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: Radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
+  pressed: {
+    opacity: 0.6,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.three,
+  },
+  logoSpacer: {
+    flex: 1,
+  },
+  eyebrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 5,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     marginBottom: Spacing.two,
   },
-  eyebrow: {
-    color: 'rgba(255,255,255,0.85)',
+  eyebrowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  eyebrowText: {
+    color: 'rgba(255,255,255,0.95)',
   },
   title: {
     color: '#FFFFFF',
@@ -124,6 +215,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255,255,255,0.88)',
+    marginTop: Spacing.half,
+    maxWidth: 420,
   },
 });

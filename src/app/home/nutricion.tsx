@@ -30,7 +30,7 @@ export default function NutricionScreen() {
           eyebrow="Área nutrición"
           title="Tu planificación"
           subtitle="Menú personalizado, lista de la compra y suplementación"
-          gradient={Brand.gradientGold}
+          gradient={Brand.gradientNavy}
         />
       }>
       <View>

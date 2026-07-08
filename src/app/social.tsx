@@ -30,7 +30,7 @@ export default function SocialScreen() {
           title="Actividad social"
           subtitle="Comparte entrenos, pasos y retos con otros usuarios"
           showBack
-          gradient={Brand.gradientTeal}
+          gradient={Brand.gradientNavy}
         />
       }>
       <View style={styles.content}>

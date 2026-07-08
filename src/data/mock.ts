@@ -8,8 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
 export const client = {
-  name: 'Lucía',
-  fullName: 'Lucía Fernández',
+  name: 'Rubén',
+  fullName: 'Rubén Zubicoa',
   goal: 'Recomposición corporal',
   coach: 'Onatz Health Coach',
   plan: 'Método Regenesis',
@@ -19,7 +19,7 @@ export const client = {
   week: 6,
   totalWeeks: 12,
   daysLeft: 42,
-  avatar: 'https://i.pravatar.cc/200?img=47',
+  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
 };
 
 export const weightSeries = {

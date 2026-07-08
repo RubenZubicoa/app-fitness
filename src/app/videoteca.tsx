@@ -27,7 +27,7 @@ export default function VideotecaScreen() {
           title="Videoteca"
           subtitle="Vídeos y PDFs sobre nutrición, entreno y hábitos"
           showBack
-          gradient={Brand.gradientGold}
+          gradient={Brand.gradientNavy}
         />
       }>
       <View style={styles.content}>

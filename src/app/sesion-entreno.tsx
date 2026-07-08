@@ -224,7 +224,7 @@ function CardioInputs({ exercise }: { exercise: Exercise }) {
               placeholderTextColor={theme.textMuted}
               keyboardType="numeric"
             />
-            <ThemedText type="caption" themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textSecondary" style={styles.cardioUnit}>
               {f.unit}
             </ThemedText>
           </View>
@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
   },
   cardioField: {
     flex: 1,
+    minWidth: 0,
     borderRadius: Radius.md,
     padding: Spacing.two,
     gap: 4,
@@ -329,11 +330,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 3,
+    width: '100%',
   },
   cardioInput: {
-    fontSize: 20,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 18,
     fontWeight: '800',
-    minWidth: 34,
     padding: 0,
+  },
+  cardioUnit: {
+    flexShrink: 0,
   },
 });

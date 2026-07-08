@@ -13,6 +13,7 @@ import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { StatTile } from '@/components/ui/stat-tile';
+import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { client, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
@@ -38,7 +39,7 @@ export default function DashboardScreen() {
           eyebrow={`Semana ${client.week} de ${client.totalWeeks}`}
           title={`Hola, ${client.name}`}
           subtitle="Vas por delante de tu plan. ¡Sigue así!"
-          rightIcon="notifications-outline">
+          rightAccessory={<ThemeToggleButton />}>
           <View style={styles.countdown}>
             <View style={styles.countLeft}>
               <ThemedText type="display" style={styles.countNum}>

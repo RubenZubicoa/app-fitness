@@ -1,15 +1,15 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
+import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const scheme = useColorScheme();
+function RootNavigator() {
+  const { scheme } = useThemePreference();
   const isDark = scheme === 'dark';
   const palette = isDark ? Colors.dark : Colors.light;
 
@@ -30,25 +30,33 @@ export default function RootLayout() {
   };
 
   return (
+    <ThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: palette.background },
+        }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="home" />
+        <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="historico-entreno" />
+        <Stack.Screen name="historico-entreno-detalle" />
+        <Stack.Screen name="revisiones" />
+        <Stack.Screen name="videoteca" />
+        <Stack.Screen name="social" />
+        <Stack.Screen name="resultados" />
+      </Stack>
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <SafeAreaProvider>
-      <ThemeProvider value={navTheme}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: palette.background },
-          }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" options={{ animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="home" />
-          <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="historico-entreno" />
-          <Stack.Screen name="historico-entreno-detalle" />
-          <Stack.Screen name="revisiones" />
-          <Stack.Screen name="videoteca" />
-          <Stack.Screen name="social" />
-          <Stack.Screen name="resultados" />
-        </Stack>
-      </ThemeProvider>
+      <ThemePreferenceProvider>
+        <RootNavigator />
+      </ThemePreferenceProvider>
     </SafeAreaProvider>
   );
 }

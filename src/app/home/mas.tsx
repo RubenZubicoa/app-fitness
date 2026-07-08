@@ -58,7 +58,7 @@ export default function MasScreen() {
           eyebrow="Más opciones"
           title="Tu espacio"
           subtitle="Revisiones, formación y resultados"
-          gradient={Brand.gradientViolet}
+          gradient={Brand.gradientNavy}
         />
       }>
       <Card style={[styles.profileCard, { marginTop: -Spacing.four }]}>
