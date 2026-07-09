@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BarChart } from '@/components/charts/bar-chart';
+import { DailyStepsCard } from '@/components/dashboard/daily-steps-card';
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -175,6 +176,11 @@ export default function DashboardScreen() {
           </View>
           <BarChart data={workoutWeek} height={140} colors={Brand.gradientPrimary} />
         </Card>
+      </View>
+
+      <View>
+        <SectionHeader title="Pasos diarios" />
+        <DailyStepsCard />
       </View>
 
       <View>

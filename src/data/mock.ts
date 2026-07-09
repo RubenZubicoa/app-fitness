@@ -74,13 +74,28 @@ export const workoutWeek = [
   { label: 'D', value: 0, highlight: false },
 ];
 
+export const dailySteps = {
+  goal: 10000,
+  /** Índice del día actual en la semana (0 = Lunes). */
+  todayIndex: 4,
+  week: [
+    { label: 'L', value: 11240 },
+    { label: 'M', value: 9850 },
+    { label: 'X', value: 10320 },
+    { label: 'J', value: 8760 },
+    { label: 'V', value: 8420 },
+    { label: 'S', value: 0 },
+    { label: 'D', value: 0 },
+  ],
+};
+
 export const macros = {
   calories: 1850,
   target: 1900,
   items: [
-    { key: 'prot', label: 'Proteínas', grams: 140, target: 150, tone: 'primary' },
-    { key: 'carbs', label: 'Carbohidratos', grams: 180, target: 200, tone: 'gold' },
-    { key: 'fats', label: 'Grasas', grams: 55, target: 60, tone: 'teal' },
+    { key: 'prot', label: 'Proteínas', shortLabel: 'Proteínas', grams: 140, target: 150, tone: 'primary' },
+    { key: 'carbs', label: 'Carbohidratos', shortLabel: 'Carbohidratos', grams: 180, target: 200, tone: 'gold' },
+    { key: 'fats', label: 'Grasas', shortLabel: 'Grasas', grams: 55, target: 60, tone: 'teal' },
   ],
 } as const;
 

@@ -62,15 +62,21 @@ export default function NutricionScreen() {
                 <View key={m.key} style={styles.macroItem}>
                   <ProgressRing
                     progress={pct}
-                    size={76}
+                    size={72}
                     strokeWidth={7}
-                    colors={[color, color]}
-                    value={`${m.grams}g`}
-                    label={m.label}
-                  />
-                  <ThemedText type="caption" themeColor="textMuted">
-                    / {m.target}g
-                  </ThemedText>
+                    colors={[color, color]}>
+                    <ThemedText type="smallBold" style={styles.macroPct}>
+                      {Math.round(pct * 100)}%
+                    </ThemedText>
+                  </ProgressRing>
+                  <View style={styles.macroMeta}>
+                    <ThemedText type="smallBold" style={styles.macroLabel} numberOfLines={2}>
+                      {m.shortLabel}
+                    </ThemedText>
+                    <ThemedText type="caption" themeColor="textMuted" style={styles.macroTarget}>
+                      {m.grams} / {m.target} g
+                    </ThemedText>
+                  </View>
                 </View>
               );
             })}
@@ -179,12 +185,29 @@ const styles = StyleSheet.create({
   },
   macrosRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     gap: Spacing.two,
   },
   macroItem: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.two,
+  },
+  macroMeta: {
+    alignItems: 'center',
+    gap: 2,
+    width: '100%',
+  },
+  macroLabel: {
+    textAlign: 'center',
+    fontSize: 12,
+  },
+  macroTarget: {
+    textAlign: 'center',
+  },
+  macroPct: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   meals: { gap: Spacing.two },
   mealCard: { paddingVertical: Spacing.two + 4 },
