@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { ClientProvider } from '@/context/client-context';
+import { ProgramsProvider } from '@/context/programs-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 
 SplashScreen.preventAutoHideAsync();
@@ -57,7 +58,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemePreferenceProvider>
         <ClientProvider>
-          <RootNavigator />
+          <ProgramsProvider>
+            <RootNavigator />
+          </ProgramsProvider>
         </ClientProvider>
       </ThemePreferenceProvider>
     </SafeAreaProvider>

@@ -1,3 +1,5 @@
+import { normalizeId } from '@/types/program';
+
 export type Client = {
   _id: string;
   name: string;
@@ -7,7 +9,8 @@ export type Client = {
   goal: string;
   coach: string;
   plan: string;
-  program: number;
+  /** Id del documento Program en la base de datos. */
+  program: string;
   startDate: string;
   endDate: string;
   week: number;
@@ -16,14 +19,6 @@ export type Client = {
   totalPhases: number;
   avatar: string;
 };
-
-function normalizeId(id: unknown): string {
-  if (typeof id === 'string') return id;
-  if (id && typeof id === 'object' && '$oid' in id) {
-    return String((id as { $oid: string }).$oid);
-  }
-  return String(id);
-}
 
 export function normalizeClient(raw: Record<string, unknown>): Client {
   return {
@@ -35,7 +30,7 @@ export function normalizeClient(raw: Record<string, unknown>): Client {
     goal: String(raw.goal ?? ''),
     coach: String(raw.coach ?? ''),
     plan: String(raw.plan ?? ''),
-    program: Number(raw.program ?? 0),
+    program: normalizeId(raw.program),
     startDate: String(raw.startDate ?? ''),
     endDate: String(raw.endDate ?? ''),
     week: Number(raw.week ?? 1),

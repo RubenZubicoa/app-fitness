@@ -24,31 +24,6 @@ export const programPhases = [
 
 export type ProgramPhase = (typeof programPhases)[number];
 
-/** Catálogo de programas disponibles. */
-export const programs = [
-  {
-    id: 1,
-    name: 'Nutrición',
-    description: 'Plan nutricional personalizado',
-  },
-  {
-    id: 2,
-    name: 'Entrenamiento',
-    description: 'Rutina y seguimiento de entrenos',
-  },
-  {
-    id: 3,
-    name: 'Nutrición + Entrenamiento',
-    description: 'Programa completo de recomposición',
-  },
-] as const;
-
-export type Program = (typeof programs)[number];
-
-export function getClientProgram(programId: number): Program {
-  return programs.find((p) => p.id === programId) ?? programs[0];
-}
-
 export function getCurrentPhase(phaseId: number): ProgramPhase {
   return programPhases.find((p) => p.id === phaseId) ?? programPhases[0];
 }
