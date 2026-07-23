@@ -28,7 +28,7 @@ const menuItems = [
     title: 'Videoteca formativa',
     subtitle: 'Nutrición, entreno, hábitos y sueño',
     icon: 'play-circle-outline',
-    href: '/videoteca',
+    href: '/home/videoteca',
     tone: 'gold',
     badge: '12 recursos',
   },
