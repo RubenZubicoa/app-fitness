@@ -17,32 +17,34 @@ import { ThemedText } from '@/components/themed-text';
 import { BrandLogo } from '@/components/ui/brand-logo';
 import { Button } from '@/components/ui/button';
 import { MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
-import { client } from '@/data/mock';
+import { useClient } from '@/context/client-context';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { login } = useClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const emailOk = email.trim().toLowerCase() === client.email.toLowerCase();
-    const passwordOk = password === client.contraseña;
-
+  const handleLogin = async () => {
     if (!email.trim() || !password) {
       setError('Introduce tu correo y contraseña.');
       return;
     }
 
-    if (!emailOk || !passwordOk) {
-      setError('Correo o contraseña incorrectos.');
-      return;
-    }
-
+    setLoading(true);
     setError('');
-    router.replace('/home');
+    try {
+      await login(email.trim(), password);
+      router.replace('/home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,7 +109,12 @@ export default function LoginScreen() {
               </ThemedText>
             </Pressable>
 
-            <Button title="Entrar" icon="log-in-outline" onPress={handleLogin} />
+            <Button
+              title={loading ? 'Entrando…' : 'Entrar'}
+              icon="log-in-outline"
+              onPress={handleLogin}
+              disabled={loading}
+            />
 
             <View style={styles.divider}>
               <View style={styles.line} />

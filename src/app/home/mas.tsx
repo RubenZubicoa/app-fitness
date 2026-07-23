@@ -12,8 +12,9 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { getClientProgram, getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { client, getClientProgram, getCurrentPhase } from '@/data/mock';
 
 const menuItems = [
   {
@@ -51,8 +52,11 @@ const toneColors = {
 export default function MasScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const phase = getCurrentPhase();
-  const program = getClientProgram();
+  const { client } = useClient();
+  if (!client) return null;
+
+  const phase = getCurrentPhase(client.phase);
+  const program = getClientProgram(client.program);
 
   return (
     <Screen
@@ -81,7 +85,7 @@ export default function MasScreen() {
         </Pressable>
       </Card>
 
-      <PhaseProgress />
+      <PhaseProgress currentPhaseId={client.phase} />
 
       <View>
         <SectionHeader title="Explorar" />

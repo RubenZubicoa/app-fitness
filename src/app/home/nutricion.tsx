@@ -10,8 +10,10 @@ import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { macros, meals, shoppingList, supplements } from '@/data/mock';
+import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { getCurrentPhase, client, macros, meals, shoppingList, supplements } from '@/data/mock';
 
 const toneMap = {
   primary: 'primary',
@@ -21,8 +23,11 @@ const toneMap = {
 
 export default function NutricionScreen() {
   const theme = useTheme();
+  const { client } = useClient();
+  if (!client) return null;
+
   const calorieProgress = macros.calories / macros.target;
-  const phase = getCurrentPhase();
+  const phase = getCurrentPhase(client.phase);
 
   return (
     <Screen

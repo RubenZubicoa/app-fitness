@@ -13,15 +13,20 @@ import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { adherenceWeeks, routine, workoutHistory, workoutWeek } from '@/data/mock';
+import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { getCurrentPhase, adherenceWeeks, client, routine, workoutHistory, workoutWeek } from '@/data/mock';
 
 export default function EntrenoScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { client } = useClient();
+  if (!client) return null;
+
   const completed = routine.filter((d) => d.done).length;
   const adherence = Math.round((completed / routine.length) * 100);
-  const phase = getCurrentPhase();
+  const phase = getCurrentPhase(client.phase);
 
   return (
     <Screen

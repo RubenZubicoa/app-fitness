@@ -3,13 +3,14 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { getCurrentPhase, programPhases, type ProgramPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { getCurrentPhase, programPhases, type ProgramPhase } from '@/data/mock';
 
 type PhaseProgressProps = {
   /** Si true, se renderiza dentro de un Card. Por defecto true. */
   withCard?: boolean;
-  /** Fase actual; por defecto la del cliente en mock. */
+  /** Fase actual; por defecto la del cliente autenticado. */
   currentPhaseId?: number;
 };
 
@@ -19,9 +20,9 @@ type PhaseProgressProps = {
  */
 export function PhaseProgress({ withCard = true, currentPhaseId }: PhaseProgressProps) {
   const theme = useTheme();
-  const current = currentPhaseId
-    ? (programPhases.find((p) => p.id === currentPhaseId) ?? getCurrentPhase())
-    : getCurrentPhase();
+  const { client } = useClient();
+  const phaseId = currentPhaseId ?? client?.phase ?? 1;
+  const current = getCurrentPhase(phaseId);
 
   const content = (
     <View style={styles.body}>

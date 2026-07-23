@@ -16,8 +16,10 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { StatTile } from '@/components/ui/stat-tile';
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { getCurrentPhase, getDaysLeft } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { client, getCurrentPhase, getDaysLeft, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
+import { weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -29,10 +31,13 @@ const quickActions = [
 export default function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { client } = useClient();
+  if (!client) return null;
+
   const programProgress = client.week / client.totalWeeks;
   const lost = (weightSeries.start - weightSeries.current).toFixed(1);
-  const phase = getCurrentPhase();
-  const daysLeft = getDaysLeft();
+  const phase = getCurrentPhase(client.phase);
+  const daysLeft = getDaysLeft(client.endDate);
 
   return (
     <Screen
@@ -69,7 +74,7 @@ export default function DashboardScreen() {
         </GradientHeader>
       }>
       <View style={{ marginTop: -Spacing.five }}>
-        <PhaseProgress />
+        <PhaseProgress currentPhaseId={client.phase} />
       </View>
 
       <View style={styles.statsRow}>
