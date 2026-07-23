@@ -31,27 +31,64 @@ export const programPhases = [
 
 export type ProgramPhase = (typeof programPhases)[number];
 
+/** Catálogo de programas disponibles. */
+export const programs = [
+  {
+    id: 1,
+    name: 'Nutrición',
+    description: 'Plan nutricional personalizado',
+  },
+  {
+    id: 2,
+    name: 'Entrenamiento',
+    description: 'Rutina y seguimiento de entrenos',
+  },
+  {
+    id: 3,
+    name: 'Nutrición + Entrenamiento',
+    description: 'Programa completo de recomposición',
+  },
+] as const;
+
+export type Program = (typeof programs)[number];
+
 export const client = {
   name: 'Rubén',
   fullName: 'Rubén Zubicoa',
+  email: 'ruben.zubicoa@email.com',
+  telefono: '+34 612 345 678',
+  contraseña: 'regenesis123',
   goal: 'Recomposición corporal',
   coach: 'Onatz Health Coach',
   plan: 'Método Regenesis',
-  program: 'Nutrición + Entrenamiento',
-  startDate: '14 abr',
-  endDate: '13 jul',
+  /** Id del programa asignado (ver `programs`). */
+  program: 3,
+  startDate: '2026-06-11',
+  endDate: '2026-09-03',
   week: 6,
   totalWeeks: 12,
   /** Fase actual del programa (1–3). La asigna el entrenador. */
   phase: 2,
   totalPhases: 3,
-  daysLeft: 42,
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
 };
+
+/** Programa asignado al cliente. */
+export function getClientProgram(): Program {
+  return programs.find((p) => p.id === client.program) ?? programs[0];
+}
 
 /** Fase activa del cliente según el valor que ha fijado el entrenador. */
 export function getCurrentPhase(): ProgramPhase {
   return programPhases.find((p) => p.id === client.phase) ?? programPhases[0];
+}
+
+/** Días restantes hasta la fecha de fin del programa. */
+export function getDaysLeft(from: Date = new Date()): number {
+  const end = new Date(`${client.endDate}T23:59:59`);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diff = Math.ceil((end.getTime() - from.getTime()) / msPerDay);
+  return Math.max(0, diff);
 }
 
 export const weightSeries = {

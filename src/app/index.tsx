@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BrandLogo } from '@/components/ui/brand-logo';
 import { Button } from '@/components/ui/button';
 import { MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
+import { client } from '@/data/mock';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -24,6 +25,25 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+  const [error, setError] = useState('');
+
+  const handleLogin = () => {
+    const emailOk = email.trim().toLowerCase() === client.email.toLowerCase();
+    const passwordOk = password === client.contraseña;
+
+    if (!email.trim() || !password) {
+      setError('Introduce tu correo y contraseña.');
+      return;
+    }
+
+    if (!emailOk || !passwordOk) {
+      setError('Correo o contraseña incorrectos.');
+      return;
+    }
+
+    setError('');
+    router.replace('/home');
+  };
 
   return (
     <LinearGradient colors={['#0B2A5B', '#0A1B33']} style={styles.root}>
@@ -56,18 +76,30 @@ export default function LoginScreen() {
               icon="mail-outline"
               placeholder="Correo electrónico"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(t) => {
+                setEmail(t);
+                if (error) setError('');
+              }}
               keyboardType="email-address"
             />
             <Field
               icon="lock-closed-outline"
               placeholder="Contraseña"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(t) => {
+                setPassword(t);
+                if (error) setError('');
+              }}
               secureTextEntry={secure}
               rightIcon={secure ? 'eye-outline' : 'eye-off-outline'}
               onRightPress={() => setSecure((s) => !s)}
             />
+
+            {error ? (
+              <ThemedText type="small" style={styles.error}>
+                {error}
+              </ThemedText>
+            ) : null}
 
             <Pressable style={styles.forgot} hitSlop={8}>
               <ThemedText type="small" themeColor="primary">
@@ -75,7 +107,7 @@ export default function LoginScreen() {
               </ThemedText>
             </Pressable>
 
-            <Button title="Entrar" icon="log-in-outline" onPress={() => router.replace('/home')} />
+            <Button title="Entrar" icon="log-in-outline" onPress={handleLogin} />
 
             <View style={styles.divider}>
               <View style={styles.line} />
@@ -199,6 +231,10 @@ const styles = StyleSheet.create({
   },
   forgot: {
     alignSelf: 'flex-end',
+    marginTop: -Spacing.one,
+  },
+  error: {
+    color: '#F0506E',
     marginTop: -Spacing.one,
   },
   divider: {

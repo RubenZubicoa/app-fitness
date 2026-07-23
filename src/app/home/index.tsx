@@ -17,7 +17,7 @@ import { StatTile } from '@/components/ui/stat-tile';
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { client, getCurrentPhase, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
+import { client, getCurrentPhase, getDaysLeft, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -32,6 +32,7 @@ export default function DashboardScreen() {
   const programProgress = client.week / client.totalWeeks;
   const lost = (weightSeries.start - weightSeries.current).toFixed(1);
   const phase = getCurrentPhase();
+  const daysLeft = getDaysLeft();
 
   return (
     <Screen
@@ -45,7 +46,7 @@ export default function DashboardScreen() {
           <View style={styles.countdown}>
             <View style={styles.countLeft}>
               <ThemedText type="display" style={styles.countNum}>
-                {client.daysLeft}
+                {daysLeft}
               </ThemedText>
               <ThemedText type="small" style={styles.countLabel}>
                 días para completar{'\n'}tu Método Regenesis

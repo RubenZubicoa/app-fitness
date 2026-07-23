@@ -13,7 +13,7 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { client, getCurrentPhase } from '@/data/mock';
+import { client, getClientProgram, getCurrentPhase } from '@/data/mock';
 
 const menuItems = [
   {
@@ -52,6 +52,7 @@ export default function MasScreen() {
   const theme = useTheme();
   const router = useRouter();
   const phase = getCurrentPhase();
+  const program = getClientProgram();
 
   return (
     <Screen
@@ -68,7 +69,7 @@ export default function MasScreen() {
         <View style={styles.profileInfo}>
           <ThemedText type="h3">{client.fullName}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {client.plan} · {client.program}
+            {client.plan} · {program.name}
           </ThemedText>
           <View style={styles.badges}>
             <Badge label={`Fase ${phase.id} · ${phase.name}`} tone="gold" />
