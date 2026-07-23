@@ -17,6 +17,7 @@ import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
 import { wellness, weightSeries } from '@/data/mock';
+import { formatChartDate } from '@/types/measurement';
 import { useTheme } from '@/hooks/use-theme';
 
 function formatMeasureDate(isoDate: string): string {
@@ -39,6 +40,12 @@ export default function ProgresoScreen() {
   const activeMeasureId = selectedMeasure ?? measureOptions[0]?.key ?? null;
   const currentMeasure = enrichedLatest.find((m) => m.MeasurementId === activeMeasureId);
   const series = activeMeasureId ? (seriesByMasterId[activeMeasureId] ?? []) : [];
+  const seriesValues = series.map((p) => p.value);
+  const seriesLabels = series.map((p) => formatChartDate(p.date));
+  const seriesDelta =
+    seriesValues.length >= 2
+      ? seriesValues[seriesValues.length - 1] - seriesValues[0]
+      : 0;
 
   if (!client) return null;
 
@@ -65,7 +72,7 @@ export default function ProgresoScreen() {
               tone="success"
             />
           </View>
-          <LineChart data={weightSeries.data} labels={weightSeries.labels} height={200} />
+          <LineChart data={weightSeries.data} labels={weightSeries.labels} height={200} unit={weightSeries.unit} />
         </Card>
       </View>
 
@@ -106,25 +113,34 @@ export default function ProgresoScreen() {
                   </View>
                   <View style={styles.deltaBox}>
                     <Ionicons
-                      name={currentMeasure.delta < 0 ? 'trending-down' : 'trending-up'}
+                      name={seriesDelta < 0 ? 'trending-down' : seriesDelta > 0 ? 'trending-up' : 'remove'}
                       size={18}
-                      color={currentMeasure.delta < 0 ? theme.success : theme.gold}
+                      color={seriesDelta < 0 ? theme.success : seriesDelta > 0 ? theme.gold : theme.textMuted}
                     />
                     <ThemedText
                       type="smallBold"
-                      style={{ color: currentMeasure.delta < 0 ? theme.success : theme.gold }}>
-                      {currentMeasure.delta > 0 ? '+' : ''}
-                      {currentMeasure.delta} {currentMeasure.unit}
+                      style={{
+                        color:
+                          seriesDelta < 0
+                            ? theme.success
+                            : seriesDelta > 0
+                              ? theme.gold
+                              : theme.textMuted,
+                      }}>
+                      {seriesValues.length < 2
+                        ? '—'
+                        : `${seriesDelta > 0 ? '+' : ''}${Number.isInteger(seriesDelta) ? seriesDelta : seriesDelta.toFixed(1)} ${currentMeasure.unit}`}
                     </ThemedText>
                   </View>
                 </View>
-                {series.length > 0 ? (
+                {seriesValues.length > 0 ? (
                   <LineChart
-                    data={series}
-                    labels={series.map((_, i) => `S${i + 1}`)}
+                    data={seriesValues}
+                    labels={seriesLabels}
                     color={theme.teal}
                     fillColor={theme.teal}
                     height={170}
+                    unit={currentMeasure.unit}
                   />
                 ) : null}
               </Card>

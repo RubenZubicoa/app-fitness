@@ -125,6 +125,7 @@ export default function DashboardScreen() {
             labels={weightSeries.labels}
             color={theme.primary}
             height={190}
+            unit={weightSeries.unit}
           />
         </Card>
       </View>

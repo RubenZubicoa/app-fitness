@@ -73,12 +73,29 @@ export function latestMeasurementsByType(records: Measurement[]): Measurement[] 
 }
 
 /** Serie temporal de valores por MeasurementId (orden cronológico). */
-export function buildMeasurementSeries(records: Measurement[]): Record<string, number[]> {
+export type MeasurementSeriesPoint = {
+  value: number;
+  date: string;
+};
+
+export function buildMeasurementSeries(
+  records: Measurement[],
+): Record<string, MeasurementSeriesPoint[]> {
   const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
-  const series: Record<string, number[]> = {};
+  const series: Record<string, MeasurementSeriesPoint[]> = {};
   for (const record of sorted) {
     if (!series[record.MeasurementId]) series[record.MeasurementId] = [];
-    series[record.MeasurementId].push(record.value);
+    series[record.MeasurementId].push({
+      value: record.value,
+      date: record.date,
+    });
   }
   return series;
+}
+
+/** Etiqueta corta para el eje X del gráfico (ej. "20 jul"). */
+export function formatChartDate(isoDate: string): string {
+  const date = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }

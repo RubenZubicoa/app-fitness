@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, StyleSheet, LayoutChangeEvent, Platform } from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -7,9 +7,11 @@ import Svg, {
   Path,
   Stop,
   Line,
+  G,
 } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type LineChartProps = {
@@ -21,6 +23,8 @@ type LineChartProps = {
   /** Muestra el punto final resaltado. */
   highlightLast?: boolean;
   showDots?: boolean;
+  /** Unidad opcional en el tooltip (ej. "kg", "cm"). */
+  unit?: string;
 };
 
 /** Construye una curva suave (Catmull-Rom → Bézier). */
@@ -43,7 +47,7 @@ function buildSmoothPath(points: { x: number; y: number }[]): string {
 }
 
 /**
- * Gráfico de línea con área degradada. Solo presentación (datos estáticos).
+ * Gráfico de línea con área degradada y tooltip al pasar el ratón / pulsar.
  */
 export function LineChart({
   data,
@@ -53,9 +57,11 @@ export function LineChart({
   fillColor,
   highlightLast = true,
   showDots = true,
+  unit,
 }: LineChartProps) {
   const theme = useTheme();
   const [width, setWidth] = useState(0);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const stroke = color ?? theme.primary;
   const fill = fillColor ?? stroke;
 
@@ -87,8 +93,37 @@ export function LineChart({
   const gid = `line-${stroke}`.replace(/[^a-zA-Z0-9]/g, '');
   const fillId = `fill-${fill}`.replace(/[^a-zA-Z0-9]/g, '');
 
+  const tooltip = useMemo(() => {
+    if (activeIndex === null || !points[activeIndex]) return null;
+    const point = points[activeIndex];
+    const tooltipWidth = 88;
+    const left = Math.min(
+      Math.max(point.x - tooltipWidth / 2, 4),
+      Math.max(width - tooltipWidth - 4, 4),
+    );
+    const top = Math.max(point.y - 52, 2);
+    const valueLabel =
+      unit != null && unit !== ''
+        ? `${data[activeIndex]} ${unit}`
+        : String(data[activeIndex]);
+    return {
+      left,
+      top,
+      label: labels?.[activeIndex],
+      value: valueLabel,
+    };
+  }, [activeIndex, points, width, data, labels, unit]);
+
+  const clearActive = () => setActiveIndex(null);
+
   return (
-    <View onLayout={onLayout} style={{ height }}>
+    <View
+      onLayout={onLayout}
+      style={{ height }}
+      // En web, salir del gráfico cierra el tooltip
+      {...(Platform.OS === 'web'
+        ? ({ onMouseLeave: clearActive } as object)
+        : {})}>
       {width > 0 && (
         <Svg width={width} height={height}>
           <Defs>
@@ -121,15 +156,67 @@ export function LineChart({
           {showDots &&
             points.map((p, i) => {
               const isLast = i === points.length - 1;
-              if (isLast && highlightLast) {
-                return (
-                  <Circle key={i} cx={p.x} cy={p.y} r={6} fill={stroke} stroke={theme.card} strokeWidth={3} />
-                );
-              }
-              return <Circle key={i} cx={p.x} cy={p.y} r={3} fill={stroke} opacity={0.5} />;
+              const isActive = activeIndex === i;
+              const visibleR = isActive ? 7 : isLast && highlightLast ? 6 : 3.5;
+              const opacity = isActive || (isLast && highlightLast) ? 1 : 0.55;
+
+              return (
+                <G key={i}>
+                  {/* Área de hit más amplia para hover / tap */}
+                  <Circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={16}
+                    fill="transparent"
+                    onPress={() => setActiveIndex(i)}
+                    {...(Platform.OS === 'web'
+                      ? ({
+                          onMouseEnter: () => setActiveIndex(i),
+                          // cursor pointer en web
+                          style: { cursor: 'pointer' },
+                        } as object)
+                      : {})}
+                  />
+                  <Circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={visibleR}
+                    fill={stroke}
+                    opacity={opacity}
+                    stroke={isActive || (isLast && highlightLast) ? theme.card : undefined}
+                    strokeWidth={isActive || (isLast && highlightLast) ? 3 : 0}
+                    pointerEvents="none"
+                  />
+                </G>
+              );
             })}
         </Svg>
       )}
+
+      {tooltip ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.tooltip,
+            Shadow.floating,
+            {
+              left: tooltip.left,
+              top: tooltip.top,
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
+          ]}>
+          {tooltip.label ? (
+            <ThemedText type="caption" themeColor="textMuted" style={styles.tooltipLabel}>
+              {tooltip.label}
+            </ThemedText>
+          ) : null}
+          <ThemedText type="smallBold" style={{ color: stroke }}>
+            {tooltip.value}
+          </ThemedText>
+        </View>
+      ) : null}
+
       {labels && (
         <View style={styles.labels} pointerEvents="none">
           {labels.map((l, i) => (
@@ -155,6 +242,21 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
+    textAlign: 'center',
+  },
+  tooltip: {
+    position: 'absolute',
+    minWidth: 72,
+    maxWidth: 110,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    gap: 1,
+    zIndex: 10,
+  },
+  tooltipLabel: {
     textAlign: 'center',
   },
 });

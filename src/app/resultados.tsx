@@ -22,7 +22,10 @@ export default function ResultadosScreen() {
   const lost = weightSeries.start - weightSeries.current;
   const waistMaster = getMasterByKey('cintura');
   const waistSeries = waistMaster ? (seriesByMasterId[waistMaster._id] ?? []) : [];
-  const waistLost = waistSeries.length >= 2 ? waistSeries[0] - waistSeries[waistSeries.length - 1] : 0;
+  const waistLost =
+    waistSeries.length >= 2
+      ? waistSeries[0].value - waistSeries[waistSeries.length - 1].value
+      : 0;
 
   return (
     <Screen

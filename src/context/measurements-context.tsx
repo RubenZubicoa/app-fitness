@@ -17,6 +17,7 @@ import {
   type EnrichedMeasurement,
   type Measurement,
   type MeasurementMaster,
+  type MeasurementSeriesPoint,
 } from '@/types/measurement';
 
 type MeasurementsContextValue = {
@@ -24,7 +25,7 @@ type MeasurementsContextValue = {
   measurements: Measurement[];
   /** Última medida por tipo, enriquecida con la maestra. */
   enrichedLatest: EnrichedMeasurement[];
-  seriesByMasterId: Record<string, number[]>;
+  seriesByMasterId: Record<string, MeasurementSeriesPoint[]>;
   loading: boolean;
   error: string | null;
   getMasterById: (id: string) => MeasurementMaster | undefined;
