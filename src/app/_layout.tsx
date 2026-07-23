@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { ClientProvider } from '@/context/client-context';
+import { MeasurementsProvider } from '@/context/measurements-context';
 import { ProgramsProvider } from '@/context/programs-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 
@@ -59,7 +60,9 @@ export default function RootLayout() {
       <ThemePreferenceProvider>
         <ClientProvider>
           <ProgramsProvider>
-            <RootNavigator />
+            <MeasurementsProvider>
+              <RootNavigator />
+            </MeasurementsProvider>
           </ProgramsProvider>
         </ClientProvider>
       </ThemePreferenceProvider>

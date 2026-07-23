@@ -16,20 +16,6 @@ export const weightSeries = {
   unit: 'kg',
 };
 
-export const measurements = [
-  { key: 'cintura', label: 'Cintura', value: 74, unit: 'cm', delta: -6, icon: 'body-outline' },
-  { key: 'cadera', label: 'Cadera', value: 96, unit: 'cm', delta: -3, icon: 'ellipse-outline' },
-  { key: 'pecho', label: 'Pecho', value: 90, unit: 'cm', delta: -2, icon: 'fitness-outline' },
-  { key: 'brazo', label: 'Brazo', value: 29, unit: 'cm', delta: 1, icon: 'barbell-outline' },
-] as const;
-
-export const measurementSeries: Record<string, number[]> = {
-  cintura: [80, 79, 78, 76, 75, 74],
-  cadera: [99, 98, 98, 97, 96, 96],
-  pecho: [92, 92, 91, 91, 90, 90],
-  brazo: [28, 28, 28, 29, 29, 29],
-};
-
 /** Sensaciones diarias (0–100). */
 export const wellness = [
   { key: 'energia', label: 'Energía', value: 82, icon: 'flash-outline', tone: 'gold' },

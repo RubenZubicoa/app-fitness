@@ -12,13 +12,17 @@ import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useMeasurements } from '@/context/measurements-context';
+import { weightSeries } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
-import { measurementSeries, weightSeries } from '@/data/mock';
 
 export default function ResultadosScreen() {
   const theme = useTheme();
+  const { seriesByMasterId, getMasterByKey } = useMeasurements();
   const lost = weightSeries.start - weightSeries.current;
-  const waistLost = measurementSeries.cintura[0] - measurementSeries.cintura[5];
+  const waistMaster = getMasterByKey('cintura');
+  const waistSeries = waistMaster ? (seriesByMasterId[waistMaster._id] ?? []) : [];
+  const waistLost = waistSeries.length >= 2 ? waistSeries[0] - waistSeries[waistSeries.length - 1] : 0;
 
   return (
     <Screen

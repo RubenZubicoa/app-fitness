@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
@@ -14,16 +14,33 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Segmented } from '@/components/ui/segmented';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
+import { useMeasurements } from '@/context/measurements-context';
+import { wellness, weightSeries } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
-import { measurementSeries, measurements, wellness, weightSeries } from '@/data/mock';
 
-const measureOptions = measurements.map((m) => ({ key: m.key, label: m.label }));
+function formatMeasureDate(isoDate: string): string {
+  const date = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function ProgresoScreen() {
   const theme = useTheme();
-  const [selectedMeasure, setSelectedMeasure] = useState(measureOptions[0].key);
-  const currentMeasure = measurements.find((m) => m.key === selectedMeasure)!;
-  const series = measurementSeries[selectedMeasure];
+  const { client } = useClient();
+  const { enrichedLatest, seriesByMasterId, loading, error } = useMeasurements();
+
+  const measureOptions = useMemo(
+    () => enrichedLatest.map((m) => ({ key: m.MeasurementId, label: m.label })),
+    [enrichedLatest],
+  );
+
+  const [selectedMeasure, setSelectedMeasure] = useState<string | null>(null);
+  const activeMeasureId = selectedMeasure ?? measureOptions[0]?.key ?? null;
+  const currentMeasure = enrichedLatest.find((m) => m.MeasurementId === activeMeasureId);
+  const series = activeMeasureId ? (seriesByMasterId[activeMeasureId] ?? []) : [];
+
+  if (!client) return null;
 
   return (
     <Screen
@@ -43,7 +60,10 @@ export default function ProgresoScreen() {
             <ThemedText type="small" themeColor="textMuted" style={styles.kg}>
               {weightSeries.unit}
             </ThemedText>
-            <Badge label={`-${(weightSeries.start - weightSeries.current).toFixed(1)} ${weightSeries.unit}`} tone="success" />
+            <Badge
+              label={`-${(weightSeries.start - weightSeries.current).toFixed(1)} ${weightSeries.unit}`}
+              tone="success"
+            />
           </View>
           <LineChart data={weightSeries.data} labels={weightSeries.labels} height={200} />
         </Card>
@@ -51,42 +71,72 @@ export default function ProgresoScreen() {
 
       <View>
         <SectionHeader title="Medidas corporales" />
-        <Segmented options={measureOptions} value={selectedMeasure} onChange={setSelectedMeasure} />
-        <Card style={styles.measureCard}>
-          <View style={styles.measureHeader}>
-            <View>
-              <ThemedText type="caption" themeColor="textMuted">
-                ACTUAL
-              </ThemedText>
-              <View style={styles.measureValue}>
-                <ThemedText type="title">{currentMeasure.value}</ThemedText>
-                <ThemedText type="small" themeColor="textMuted">
-                  {currentMeasure.unit}
-                </ThemedText>
-              </View>
-            </View>
-            <View style={styles.deltaBox}>
-              <Ionicons
-                name={currentMeasure.delta < 0 ? 'trending-down' : 'trending-up'}
-                size={18}
-                color={currentMeasure.delta < 0 ? theme.success : theme.gold}
-              />
-              <ThemedText
-                type="smallBold"
-                style={{ color: currentMeasure.delta < 0 ? theme.success : theme.gold }}>
-                {currentMeasure.delta > 0 ? '+' : ''}
-                {currentMeasure.delta} {currentMeasure.unit}
-              </ThemedText>
-            </View>
-          </View>
-          <LineChart
-            data={series}
-            labels={weightSeries.labels}
-            color={theme.teal}
-            fillColor={theme.teal}
-            height={170}
-          />
-        </Card>
+        {loading ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando medidas…
+            </ThemedText>
+          </Card>
+        ) : error ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              {error}
+            </ThemedText>
+          </Card>
+        ) : measureOptions.length > 0 && activeMeasureId ? (
+          <>
+            <Segmented
+              options={measureOptions}
+              value={activeMeasureId}
+              onChange={setSelectedMeasure}
+            />
+            {currentMeasure ? (
+              <Card style={styles.measureCard}>
+                <View style={styles.measureHeader}>
+                  <View>
+                    <ThemedText type="caption" themeColor="textMuted">
+                      {currentMeasure.label.toUpperCase()} · {formatMeasureDate(currentMeasure.date)}
+                    </ThemedText>
+                    <View style={styles.measureValue}>
+                      <ThemedText type="title">{currentMeasure.value}</ThemedText>
+                      <ThemedText type="small" themeColor="textMuted">
+                        {currentMeasure.unit}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={styles.deltaBox}>
+                    <Ionicons
+                      name={currentMeasure.delta < 0 ? 'trending-down' : 'trending-up'}
+                      size={18}
+                      color={currentMeasure.delta < 0 ? theme.success : theme.gold}
+                    />
+                    <ThemedText
+                      type="smallBold"
+                      style={{ color: currentMeasure.delta < 0 ? theme.success : theme.gold }}>
+                      {currentMeasure.delta > 0 ? '+' : ''}
+                      {currentMeasure.delta} {currentMeasure.unit}
+                    </ThemedText>
+                  </View>
+                </View>
+                {series.length > 0 ? (
+                  <LineChart
+                    data={series}
+                    labels={series.map((_, i) => `S${i + 1}`)}
+                    color={theme.teal}
+                    fillColor={theme.teal}
+                    height={170}
+                  />
+                ) : null}
+              </Card>
+            ) : null}
+          </>
+        ) : (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Todavía no hay medidas registradas para tu cuenta.
+            </ThemedText>
+          </Card>
+        )}
       </View>
 
       <View>
@@ -126,7 +176,12 @@ export default function ProgresoScreen() {
         <View style={styles.photoRow}>
           <PhotoCard label="Inicio" date="14 abr" image="https://picsum.photos/seed/regenesis1/300/400" />
           <PhotoCard label="Semana 3" date="5 may" image="https://picsum.photos/seed/regenesis2/300/400" />
-          <PhotoCard label="Semana 6" date="26 may" highlight image="https://picsum.photos/seed/regenesis3/300/400" />
+          <PhotoCard
+            label="Semana 6"
+            date="26 may"
+            highlight
+            image="https://picsum.photos/seed/regenesis3/300/400"
+          />
         </View>
         <Button title="Subir nuevas fotos" icon="camera-outline" variant="secondary" />
       </View>
@@ -139,7 +194,13 @@ export default function ProgresoScreen() {
           </ThemedText>
           <View style={styles.registerActions}>
             <Button title="Añadir registro" icon="add-circle-outline" style={styles.flex} />
-            <Button title="Fotos" icon="images-outline" variant="ghost" fullWidth={false} style={styles.photoBtn} />
+            <Button
+              title="Fotos"
+              icon="images-outline"
+              variant="ghost"
+              fullWidth={false}
+              style={styles.photoBtn}
+            />
           </View>
         </Card>
       </View>
