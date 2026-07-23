@@ -7,6 +7,30 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
+/**
+ * Las 3 fases del programa de 12 semanas.
+ * El avance de fase lo gestiona el entrenador; aquí solo se refleja el estado actual.
+ */
+export const programPhases = [
+  {
+    id: 1,
+    name: 'Adaptación',
+    description: 'Hábitos, técnica y base metabólica',
+  },
+  {
+    id: 2,
+    name: 'Progresión',
+    description: 'Intensidad y ajuste del plan',
+  },
+  {
+    id: 3,
+    name: 'Optimización',
+    description: 'Refino final y consolidación',
+  },
+] as const;
+
+export type ProgramPhase = (typeof programPhases)[number];
+
 export const client = {
   name: 'Rubén',
   fullName: 'Rubén Zubicoa',
@@ -18,9 +42,17 @@ export const client = {
   endDate: '13 jul',
   week: 6,
   totalWeeks: 12,
+  /** Fase actual del programa (1–3). La asigna el entrenador. */
+  phase: 2,
+  totalPhases: 3,
   daysLeft: 42,
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
 };
+
+/** Fase activa del cliente según el valor que ha fijado el entrenador. */
+export function getCurrentPhase(): ProgramPhase {
+  return programPhases.find((p) => p.id === client.phase) ?? programPhases[0];
+}
 
 export const weightSeries = {
   labels: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'],

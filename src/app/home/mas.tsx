@@ -10,9 +10,10 @@ import { GradientHeader } from '@/components/ui/gradient-header';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
+import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { client } from '@/data/mock';
+import { client, getCurrentPhase } from '@/data/mock';
 
 const menuItems = [
   {
@@ -50,6 +51,7 @@ const toneColors = {
 export default function MasScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const phase = getCurrentPhase();
 
   return (
     <Screen
@@ -68,12 +70,17 @@ export default function MasScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             {client.plan} · {client.program}
           </ThemedText>
-          <Badge label={`Semana ${client.week}/${client.totalWeeks}`} tone="primary" />
+          <View style={styles.badges}>
+            <Badge label={`Fase ${phase.id} · ${phase.name}`} tone="gold" />
+            <Badge label={`Semana ${client.week}/${client.totalWeeks}`} tone="primary" />
+          </View>
         </View>
         <Pressable style={[styles.settingsBtn, { backgroundColor: theme.backgroundElement }]}>
           <Ionicons name="settings-outline" size={20} color={theme.textSecondary} />
         </Pressable>
       </Card>
+
+      <PhaseProgress />
 
       <View>
         <SectionHeader title="Explorar" />
@@ -131,6 +138,12 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
     gap: 4,
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 2,
   },
   settingsBtn: {
     width: 40,

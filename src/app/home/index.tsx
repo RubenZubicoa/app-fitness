@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BarChart } from '@/components/charts/bar-chart';
 import { DailyStepsCard } from '@/components/dashboard/daily-steps-card';
+import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -17,7 +18,7 @@ import { StatTile } from '@/components/ui/stat-tile';
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { client, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
+import { client, getCurrentPhase, weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -31,15 +32,16 @@ export default function DashboardScreen() {
   const router = useRouter();
   const programProgress = client.week / client.totalWeeks;
   const lost = (weightSeries.start - weightSeries.current).toFixed(1);
+  const phase = getCurrentPhase();
 
   return (
     <Screen
       header={
         <GradientHeader
           showLogo
-          eyebrow={`Semana ${client.week} de ${client.totalWeeks}`}
+          eyebrow={`Fase ${phase.id} · Semana ${client.week} de ${client.totalWeeks}`}
           title={`Hola, ${client.name}`}
-          subtitle="Vas por delante de tu plan. ¡Sigue así!"
+          subtitle={`${phase.name}: vas por delante de tu plan. ¡Sigue así!`}
           rightAccessory={<ThemeToggleButton />}>
           <View style={styles.countdown}>
             <View style={styles.countLeft}>
@@ -66,7 +68,11 @@ export default function DashboardScreen() {
           </View>
         </GradientHeader>
       }>
-      <View style={[styles.statsRow, { marginTop: -Spacing.five }]}>
+      <View style={{ marginTop: -Spacing.five }}>
+        <PhaseProgress />
+      </View>
+
+      <View style={styles.statsRow}>
         <StatTile
           icon="trending-down"
           iconColor={theme.success}

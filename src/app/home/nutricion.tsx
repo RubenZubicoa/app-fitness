@@ -11,7 +11,7 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { macros, meals, shoppingList, supplements } from '@/data/mock';
+import { getCurrentPhase, client, macros, meals, shoppingList, supplements } from '@/data/mock';
 
 const toneMap = {
   primary: 'primary',
@@ -22,14 +22,15 @@ const toneMap = {
 export default function NutricionScreen() {
   const theme = useTheme();
   const calorieProgress = macros.calories / macros.target;
+  const phase = getCurrentPhase();
 
   return (
     <Screen
       header={
         <GradientHeader
-          eyebrow="Área nutrición"
+          eyebrow={`Área nutrición · Fase ${phase.id}`}
           title="Tu planificación"
-          subtitle="Menú personalizado, lista de la compra y suplementación"
+          subtitle={`${phase.name}: menú personalizado, lista de la compra y suplementación`}
           gradient={Brand.gradientNavy}
         />
       }>
@@ -50,7 +51,7 @@ export default function NutricionScreen() {
               <ThemedText type="body" themeColor="textSecondary">
                 {macros.target} kcal · Recomposición corporal
               </ThemedText>
-              <Badge label="Plan activo · Semana 6" tone="gold" />
+              <Badge label={`Fase ${phase.id} · Semana ${client.week}`} tone="gold" />
             </View>
           </View>
           <View style={styles.macrosRow}>

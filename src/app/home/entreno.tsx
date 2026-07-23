@@ -14,21 +14,22 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { adherenceWeeks, routine, workoutHistory, workoutWeek } from '@/data/mock';
+import { getCurrentPhase, adherenceWeeks, client, routine, workoutHistory, workoutWeek } from '@/data/mock';
 
 export default function EntrenoScreen() {
   const theme = useTheme();
   const router = useRouter();
   const completed = routine.filter((d) => d.done).length;
   const adherence = Math.round((completed / routine.length) * 100);
+  const phase = getCurrentPhase();
 
   return (
     <Screen
       header={
         <GradientHeader
-          eyebrow="Área entrenamiento"
+          eyebrow={`Área entrenamiento · Fase ${phase.id}`}
           title="Tu rutina"
-          subtitle="Plan personalizado con seguimiento semanal"
+          subtitle={`${phase.name}: plan personalizado con seguimiento semanal`}
           gradient={Brand.gradientNavy}
         />
       }>
@@ -52,7 +53,7 @@ export default function EntrenoScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             entrenos completados
           </ThemedText>
-          <Badge label="Semana 6" tone="gold" />
+          <Badge label={`Fase ${phase.id} · Semana ${client.week}`} tone="gold" />
         </Card>
       </View>
 
