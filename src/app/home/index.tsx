@@ -17,9 +17,12 @@ import { StatTile } from '@/components/ui/stat-tile';
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
+import { useWeights } from '@/context/weights-context';
 import { getCurrentPhase, getDaysLeft } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-import { weeklyScore, weightSeries, workoutWeek } from '@/data/mock';
+import { weeklyScore, workoutWeek } from '@/data/mock';
+import { formatChartDate } from '@/types/measurement';
+import { getLatestWeightValue } from '@/types/weight';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -32,10 +35,12 @@ export default function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { client } = useClient();
+  const { weight, loading: weightLoading, error: weightError } = useWeights();
   if (!client) return null;
 
   const programProgress = client.week / client.totalWeeks;
-  const lost = (weightSeries.start - weightSeries.current).toFixed(1);
+  const latestWeight = weight ? getLatestWeightValue(weight) : null;
+  const lost = weight && latestWeight != null ? (weight.start - latestWeight).toFixed(1) : '—';
   const phase = getCurrentPhase(client.phase);
   const daysLeft = getDaysLeft(client.endDate);
 
@@ -103,30 +108,48 @@ export default function DashboardScreen() {
       <View>
         <SectionHeader title="Evolución del peso" actionLabel="Ver progreso" onAction={() => router.push('/home/progreso')} />
         <Card>
-          <View style={styles.weightHeader}>
-            <View>
-              <View style={styles.weightRow}>
-                <ThemedText type="display">{weightSeries.current}</ThemedText>
-                <ThemedText type="small" themeColor="textMuted" style={styles.kg}>
-                  {weightSeries.unit}
-                </ThemedText>
+          {weightLoading ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando peso…
+            </ThemedText>
+          ) : weightError ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              {weightError}
+            </ThemedText>
+          ) : !weight ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay registros de peso.
+            </ThemedText>
+          ) : (
+            <>
+              <View style={styles.weightHeader}>
+                <View>
+                  <View style={styles.weightRow}>
+                    <ThemedText type="display">{getLatestWeightValue(weight)}</ThemedText>
+                    <ThemedText type="small" themeColor="textMuted" style={styles.kg}>
+                      {weight.unit}
+                    </ThemedText>
+                  </View>
+                  <Badge label={`Objetivo ${weight.target} ${weight.unit}`} tone="primary" />
+                </View>
+                <View style={styles.weightMeta}>
+                  <ThemedText type="caption" themeColor="textMuted">
+                    INICIO
+                  </ThemedText>
+                  <ThemedText type="h3">
+                    {weight.start} {weight.unit}
+                  </ThemedText>
+                </View>
               </View>
-              <Badge label={`Objetivo ${weightSeries.target} ${weightSeries.unit}`} tone="primary" />
-            </View>
-            <View style={styles.weightMeta}>
-              <ThemedText type="caption" themeColor="textMuted">
-                INICIO
-              </ThemedText>
-              <ThemedText type="h3">{weightSeries.start} {weightSeries.unit}</ThemedText>
-            </View>
-          </View>
-          <LineChart
-            data={weightSeries.data}
-            labels={weightSeries.labels}
-            color={theme.primary}
-            height={190}
-            unit={weightSeries.unit}
-          />
+              <LineChart
+                data={weight.data}
+                labels={weight.labels.map(formatChartDate)}
+                color={theme.primary}
+                height={190}
+                unit={weight.unit}
+              />
+            </>
+          )}
         </Card>
       </View>
 

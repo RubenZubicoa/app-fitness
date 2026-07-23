@@ -7,6 +7,7 @@ import { Colors } from '@/constants/theme';
 import { ClientProvider } from '@/context/client-context';
 import { MeasurementsProvider } from '@/context/measurements-context';
 import { ProgramsProvider } from '@/context/programs-context';
+import { WeightsProvider } from '@/context/weights-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 
 SplashScreen.preventAutoHideAsync();
@@ -61,7 +62,9 @@ export default function RootLayout() {
         <ClientProvider>
           <ProgramsProvider>
             <MeasurementsProvider>
-              <RootNavigator />
+              <WeightsProvider>
+                <RootNavigator />
+              </WeightsProvider>
             </MeasurementsProvider>
           </ProgramsProvider>
         </ClientProvider>

@@ -7,15 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const weightSeries = {
-  labels: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'],
-  data: [68.4, 67.9, 67.2, 66.8, 66.1, 65.4],
-  start: 68.4,
-  current: 65.4,
-  target: 62,
-  unit: 'kg',
-};
-
 /** Sensaciones diarias (0–100). */
 export const wellness = [
   { key: 'energia', label: 'Energía', value: 82, icon: 'flash-outline', tone: 'gold' },

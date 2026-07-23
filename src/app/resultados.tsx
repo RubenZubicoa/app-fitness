@@ -13,13 +13,16 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useMeasurements } from '@/context/measurements-context';
-import { weightSeries } from '@/data/mock';
+import { useWeights } from '@/context/weights-context';
 import { useTheme } from '@/hooks/use-theme';
+import { formatChartDate } from '@/types/measurement';
+import { getLatestWeightValue } from '@/types/weight';
 
 export default function ResultadosScreen() {
   const theme = useTheme();
   const { seriesByMasterId, getMasterByKey } = useMeasurements();
-  const lost = weightSeries.start - weightSeries.current;
+  const { weight, loading: weightLoading, error: weightError } = useWeights();
+  const lost = weight ? weight.start - getLatestWeightValue(weight) : 0;
   const waistMaster = getMasterByKey('cintura');
   const waistSeries = waistMaster ? (seriesByMasterId[waistMaster._id] ?? []) : [];
   const waistLost =
@@ -79,13 +82,27 @@ export default function ResultadosScreen() {
           <ThemedText type="h3" style={styles.chartTitle}>
             Evolución completa del peso
           </ThemedText>
-          <LineChart
-            data={[...weightSeries.data, weightSeries.target]}
-            labels={['S1', 'S3', 'S5', 'S7', 'S9', 'S11', 'Meta']}
-            color={theme.gold}
-            fillColor={theme.gold}
-            height={200}
-          />
+          {weightLoading ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando peso…
+            </ThemedText>
+          ) : weightError ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              {weightError}
+            </ThemedText>
+          ) : !weight ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay registros de peso.
+            </ThemedText>
+          ) : (
+            <LineChart
+              data={[...weight.data, weight.target]}
+              labels={[...weight.labels.map(formatChartDate), 'Meta']}
+              color={theme.gold}
+              fillColor={theme.gold}
+              height={200}
+            />
+          )}
         </Card>
 
         <Button title="Descargar informe PDF" icon="download-outline" gradient={Brand.gradientGold} />

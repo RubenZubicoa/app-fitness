@@ -16,8 +16,10 @@ import { Segmented } from '@/components/ui/segmented';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
-import { wellness, weightSeries } from '@/data/mock';
+import { useWeights } from '@/context/weights-context';
+import { wellness } from '@/data/mock';
 import { formatChartDate } from '@/types/measurement';
+import { getLatestWeightValue } from '@/types/weight';
 import { useTheme } from '@/hooks/use-theme';
 
 function formatMeasureDate(isoDate: string): string {
@@ -30,6 +32,7 @@ export default function ProgresoScreen() {
   const theme = useTheme();
   const { client } = useClient();
   const { enrichedLatest, seriesByMasterId, loading, error } = useMeasurements();
+  const { weight, loading: weightLoading, error: weightError } = useWeights();
 
   const measureOptions = useMemo(
     () => enrichedLatest.map((m) => ({ key: m.MeasurementId, label: m.label })),
@@ -62,17 +65,38 @@ export default function ProgresoScreen() {
       <View>
         <SectionHeader title="Evolución del peso" />
         <Card>
-          <View style={styles.weightTop}>
-            <ThemedText type="display">{weightSeries.current}</ThemedText>
-            <ThemedText type="small" themeColor="textMuted" style={styles.kg}>
-              {weightSeries.unit}
+          {weightLoading ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando peso…
             </ThemedText>
-            <Badge
-              label={`-${(weightSeries.start - weightSeries.current).toFixed(1)} ${weightSeries.unit}`}
-              tone="success"
-            />
-          </View>
-          <LineChart data={weightSeries.data} labels={weightSeries.labels} height={200} unit={weightSeries.unit} />
+          ) : weightError ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              {weightError}
+            </ThemedText>
+          ) : !weight ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay registros de peso.
+            </ThemedText>
+          ) : (
+            <>
+              <View style={styles.weightTop}>
+                <ThemedText type="display">{getLatestWeightValue(weight)}</ThemedText>
+                <ThemedText type="small" themeColor="textMuted" style={styles.kg}>
+                  {weight.unit}
+                </ThemedText>
+                <Badge
+                  label={`-${(weight.start - getLatestWeightValue(weight)).toFixed(1)} ${weight.unit}`}
+                  tone="success"
+                />
+              </View>
+              <LineChart
+                data={weight.data}
+                labels={weight.labels.map(formatChartDate)}
+                height={200}
+                unit={weight.unit}
+              />
+            </>
+          )}
         </Card>
       </View>
 
