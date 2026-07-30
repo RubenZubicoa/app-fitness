@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { BarChart, type BarDatum } from '@/components/charts/bar-chart';
@@ -7,38 +7,48 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Brand, Radius, Spacing } from '@/constants/theme';
-import { useClient } from '@/context/client-context';
-import { getDailyStepsForClient, getTodayWeekdayIndex } from '@/data/mock';
+import { useDailySteps } from '@/context/daily-steps-context';
 import { useTheme } from '@/hooks/use-theme';
+import { getTodayWeekdayIndex } from '@/types/daily-steps';
 
 function formatSteps(value: number) {
   return value.toLocaleString('es-ES');
 }
 
-/** Tarjeta de pasos diarios con registro y gráfico semanal (solo UI). */
+/** Tarjeta de pasos diarios con registro y gráfico semanal. */
 export function DailyStepsCard() {
   const theme = useTheme();
-  const { client } = useClient();
-  const steps = getDailyStepsForClient(client?._id ?? '');
+  const { current: steps, loading, error } = useDailySteps();
   const todayIndex = getTodayWeekdayIndex();
 
-  const [weekValues, setWeekValues] = useState(() => steps.days.map((d) => d.value));
+  const [weekValues, setWeekValues] = useState<number[]>([]);
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (!steps) {
+      setWeekValues([]);
+      setInput('');
+      return;
+    }
+    const values = steps.days.map((d) => d.value);
+    setWeekValues(values);
+    const today = values[todayIndex] ?? 0;
+    setInput(today > 0 ? String(today) : '');
+  }, [steps, todayIndex]);
+
   const todaySteps = weekValues[todayIndex] ?? 0;
-  const goal = steps.goal;
-
-  const [input, setInput] = useState(todaySteps > 0 ? String(todaySteps) : '');
-
-  const progress = Math.min(todaySteps / goal, 1);
-  const goalReached = todaySteps >= goal;
+  const goal = steps?.goal ?? 0;
+  const progress = goal > 0 ? Math.min(todaySteps / goal, 1) : 0;
+  const goalReached = goal > 0 && todaySteps >= goal;
 
   const chartData: BarDatum[] = useMemo(
     () =>
-      steps.days.map((day, i) => ({
+      (steps?.days ?? []).map((day, i) => ({
         label: day.label,
         value: weekValues[i] ?? 0,
-        highlight: i === todayIndex || (weekValues[i] ?? 0) >= goal,
+        highlight: true,
       })),
-    [steps.days, weekValues, todayIndex, goal],
+    [steps?.days, weekValues],
   );
 
   const chartMax = Math.max(goal, ...weekValues, 1);
@@ -55,6 +65,36 @@ export function DailyStepsCard() {
     setInput(String(parsed));
   };
 
+  if (loading) {
+    return (
+      <Card style={styles.card}>
+        <ThemedText type="body" themeColor="textSecondary">
+          Cargando pasos…
+        </ThemedText>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card style={styles.card}>
+        <ThemedText type="body" themeColor="textSecondary">
+          {error}
+        </ThemedText>
+      </Card>
+    );
+  }
+
+  if (!steps) {
+    return (
+      <Card style={styles.card}>
+        <ThemedText type="body" themeColor="textSecondary">
+          Aún no hay registros de pasos.
+        </ThemedText>
+      </Card>
+    );
+  }
+
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
@@ -65,7 +105,10 @@ export function DailyStepsCard() {
             Hoy · semana {steps.week} · objetivo {formatSteps(goal)}
           </ThemedText>
         </View>
-        <Badge label={goalReached ? 'Meta lograda' : `${Math.round(progress * 100)}%`} tone={goalReached ? 'success' : 'teal'} />
+        <Badge
+          label={goalReached ? 'Meta lograda' : `${Math.round(progress * 100)}%`}
+          tone={goalReached ? 'success' : 'teal'}
+        />
       </View>
 
       <View style={[styles.progressTrack, { backgroundColor: theme.track }]}>
@@ -118,11 +161,24 @@ export function DailyStepsCard() {
           Semana {steps.week}
         </ThemedText>
         <ThemedText type="caption" themeColor="textSecondary">
-          Media {formatSteps(Math.round(weekValues.reduce((a, b) => a + b, 0) / weekValues.filter((v) => v > 0).length || 1))}
+          Media{' '}
+          {formatSteps(
+            Math.round(
+              weekValues.reduce((a, b) => a + b, 0) /
+                (weekValues.filter((v) => v > 0).length || 1),
+            ),
+          )}
         </ThemedText>
       </View>
 
-      <BarChart data={chartData} height={150} max={chartMax} colors={Brand.gradientTeal} />
+      <BarChart
+        data={chartData}
+        height={150}
+        max={chartMax}
+        colors={Brand.gradientGold}
+        allHighlighted
+        unit="pasos"
+      />
     </Card>
   );
 }

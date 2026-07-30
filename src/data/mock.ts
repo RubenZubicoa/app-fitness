@@ -28,34 +28,6 @@ export const workoutWeek = [
   { label: 'D', value: 0, highlight: false },
 ];
 
-export const dailySteps = {
-  clientId: '6a620e6c10d4cdecdb7c6817',
-  /** Número de semana del programa. */
-  week: 6,
-  goal: 10000,
-  days: [
-    { label: 'L', value: 11240 },
-    { label: 'M', value: 9850 },
-    { label: 'X', value: 10320 },
-    { label: 'J', value: 8760 },
-    { label: 'V', value: 8420 },
-    { label: 'S', value: 0 },
-    { label: 'D', value: 0 },
-  ],
-};
-
-/** Índice del día actual en la semana (0 = lunes … 6 = domingo). */
-export function getTodayWeekdayIndex(date = new Date()): number {
-  const day = date.getDay(); // 0 = domingo
-  return day === 0 ? 6 : day - 1;
-}
-
-/** Pasos del cliente. Si no hay match, usa los de demo. */
-export function getDailyStepsForClient(clientId: string) {
-  if (dailySteps.clientId === clientId) return dailySteps;
-  return dailySteps;
-}
-
 export const macros = {
   calories: 1850,
   target: 1900,
