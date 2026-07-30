@@ -17,7 +17,7 @@ import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
 import { useWeights } from '@/context/weights-context';
-import { wellness } from '@/data/mock';
+import { useWellness } from '@/context/wellness-context';
 import { formatChartDate } from '@/types/measurement';
 import { getLatestWeightValue } from '@/types/weight';
 import { useTheme } from '@/hooks/use-theme';
@@ -28,11 +28,34 @@ function formatMeasureDate(isoDate: string): string {
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function resolveWellnessTone(
+  tone: string,
+  theme: ReturnType<typeof useTheme>,
+): string {
+  switch (tone) {
+    case 'gold':
+    case 'amber':
+      return theme.gold;
+    case 'purple':
+    case 'indigo':
+      return theme.purple;
+    case 'coral':
+    case 'rose':
+      return theme.coral;
+    case 'teal':
+    case 'green':
+      return theme.teal;
+    default:
+      return theme.primary;
+  }
+}
+
 export default function ProgresoScreen() {
   const theme = useTheme();
   const { client } = useClient();
   const { enrichedLatest, seriesByMasterId, loading, error } = useMeasurements();
   const { weight, loading: weightLoading, error: weightError } = useWeights();
+  const { enriched: wellnessItems, loading: wellnessLoading, error: wellnessError } = useWellness();
 
   const measureOptions = useMemo(
     () => enrichedLatest.map((m) => ({ key: m.MeasurementId, label: m.label })),
@@ -181,34 +204,47 @@ export default function ProgresoScreen() {
 
       <View>
         <SectionHeader title="Sensaciones diarias" />
-        <View style={styles.wellnessGrid}>
-          {wellness.map((w) => {
-            const toneColor =
-              w.tone === 'gold'
-                ? theme.gold
-                : w.tone === 'purple'
-                  ? theme.purple
-                  : w.tone === 'coral'
-                    ? theme.coral
-                    : theme.teal;
-            return (
-              <Card key={w.key} style={styles.wellnessCard}>
-                <View style={styles.wellnessTop}>
-                  <Ionicons name={w.icon} size={18} color={toneColor} />
-                  <ThemedText type="smallBold">{w.label}</ThemedText>
-                </View>
-                <ProgressRing
-                  progress={w.value / 100}
-                  size={88}
-                  strokeWidth={8}
-                  colors={[toneColor, toneColor]}
-                  value={`${w.value}`}
-                  label="/ 100"
-                />
-              </Card>
-            );
-          })}
-        </View>
+        {wellnessLoading ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando sensaciones…
+            </ThemedText>
+          </Card>
+        ) : wellnessError ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              {wellnessError}
+            </ThemedText>
+          </Card>
+        ) : wellnessItems.length === 0 ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay sensaciones registradas.
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.wellnessGrid}>
+            {wellnessItems.map((w) => {
+              const toneColor = resolveWellnessTone(w.tone, theme);
+              return (
+                <Card key={w._id} style={styles.wellnessCard}>
+                  <View style={styles.wellnessTop}>
+                    <Ionicons name={w.icon} size={18} color={toneColor} />
+                    <ThemedText type="smallBold">{w.label}</ThemedText>
+                  </View>
+                  <ProgressRing
+                    progress={w.value / 100}
+                    size={88}
+                    strokeWidth={8}
+                    colors={[toneColor, toneColor]}
+                    value={`${w.value}`}
+                    label="/ 100"
+                  />
+                </Card>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View>

@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Brand, Radius, Spacing } from '@/constants/theme';
-import { dailySteps as dailyStepsMock } from '@/data/mock';
+import { useClient } from '@/context/client-context';
+import { getDailyStepsForClient, getTodayWeekdayIndex } from '@/data/mock';
 import { useTheme } from '@/hooks/use-theme';
 
 function formatSteps(value: number) {
@@ -17,10 +18,13 @@ function formatSteps(value: number) {
 /** Tarjeta de pasos diarios con registro y gráfico semanal (solo UI). */
 export function DailyStepsCard() {
   const theme = useTheme();
-  const [weekValues, setWeekValues] = useState(() => dailyStepsMock.week.map((d) => d.value));
-  const todayIndex = dailyStepsMock.todayIndex;
+  const { client } = useClient();
+  const steps = getDailyStepsForClient(client?._id ?? '');
+  const todayIndex = getTodayWeekdayIndex();
+
+  const [weekValues, setWeekValues] = useState(() => steps.days.map((d) => d.value));
   const todaySteps = weekValues[todayIndex] ?? 0;
-  const goal = dailyStepsMock.goal;
+  const goal = steps.goal;
 
   const [input, setInput] = useState(todaySteps > 0 ? String(todaySteps) : '');
 
@@ -29,12 +33,12 @@ export function DailyStepsCard() {
 
   const chartData: BarDatum[] = useMemo(
     () =>
-      dailyStepsMock.week.map((day, i) => ({
+      steps.days.map((day, i) => ({
         label: day.label,
         value: weekValues[i] ?? 0,
         highlight: i === todayIndex || (weekValues[i] ?? 0) >= goal,
       })),
-    [weekValues, todayIndex, goal],
+    [steps.days, weekValues, todayIndex, goal],
   );
 
   const chartMax = Math.max(goal, ...weekValues, 1);
@@ -58,7 +62,7 @@ export function DailyStepsCard() {
         <View style={styles.headerInfo}>
           <ThemedText type="h3">{formatSteps(todaySteps)} pasos</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Hoy · objetivo {formatSteps(goal)}
+            Hoy · semana {steps.week} · objetivo {formatSteps(goal)}
           </ThemedText>
         </View>
         <Badge label={goalReached ? 'Meta lograda' : `${Math.round(progress * 100)}%`} tone={goalReached ? 'success' : 'teal'} />
@@ -111,7 +115,7 @@ export function DailyStepsCard() {
 
       <View style={styles.chartHeader}>
         <ThemedText type="label" themeColor="textMuted">
-          Esta semana
+          Semana {steps.week}
         </ThemedText>
         <ThemedText type="caption" themeColor="textSecondary">
           Media {formatSteps(Math.round(weekValues.reduce((a, b) => a + b, 0) / weekValues.filter((v) => v > 0).length || 1))}

@@ -7,14 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-/** Sensaciones diarias (0–100). */
-export const wellness = [
-  { key: 'energia', label: 'Energía', value: 82, icon: 'flash-outline', tone: 'gold' },
-  { key: 'sueno', label: 'Sueño', value: 74, icon: 'moon-outline', tone: 'purple' },
-  { key: 'hambre', label: 'Hambre', value: 38, icon: 'restaurant-outline', tone: 'coral' },
-  { key: 'antojos', label: 'Antojos', value: 28, icon: 'ice-cream-outline', tone: 'teal' },
-] as const;
-
 export const weeklyScore = {
   value: 86,
   label: 'Puntuación semanal',
@@ -37,10 +29,11 @@ export const workoutWeek = [
 ];
 
 export const dailySteps = {
+  clientId: '6a620e6c10d4cdecdb7c6817',
+  /** Número de semana del programa. */
+  week: 6,
   goal: 10000,
-  /** Índice del día actual en la semana (0 = Lunes). */
-  todayIndex: 4,
-  week: [
+  days: [
     { label: 'L', value: 11240 },
     { label: 'M', value: 9850 },
     { label: 'X', value: 10320 },
@@ -50,6 +43,18 @@ export const dailySteps = {
     { label: 'D', value: 0 },
   ],
 };
+
+/** Índice del día actual en la semana (0 = lunes … 6 = domingo). */
+export function getTodayWeekdayIndex(date = new Date()): number {
+  const day = date.getDay(); // 0 = domingo
+  return day === 0 ? 6 : day - 1;
+}
+
+/** Pasos del cliente. Si no hay match, usa los de demo. */
+export function getDailyStepsForClient(clientId: string) {
+  if (dailySteps.clientId === clientId) return dailySteps;
+  return dailySteps;
+}
 
 export const macros = {
   calories: 1850,
