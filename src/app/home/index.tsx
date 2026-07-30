@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BarChart } from '@/components/charts/bar-chart';
@@ -17,10 +18,14 @@ import { StatTile } from '@/components/ui/stat-tile';
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
+import { useDailySteps } from '@/context/daily-steps-context';
+import { useMacros } from '@/context/macros-context';
 import { useWeights } from '@/context/weights-context';
+import { useWellness } from '@/context/wellness-context';
 import { getCurrentPhase, getDaysLeft } from '@/data/program';
+import { computeWeeklyScore } from '@/data/weekly-score';
 import { useTheme } from '@/hooks/use-theme';
-import { weeklyScore, workoutWeek } from '@/data/mock';
+import { workoutWeek } from '@/data/mock';
 import { formatChartDate } from '@/types/measurement';
 import { getLatestWeightValue } from '@/types/weight';
 
@@ -36,6 +41,21 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { client } = useClient();
   const { weight, loading: weightLoading, error: weightError } = useWeights();
+  const { current: dailySteps } = useDailySteps();
+  const { enriched: wellness } = useWellness();
+  const { macros } = useMacros();
+
+  const weeklyScore = useMemo(
+    () =>
+      computeWeeklyScore({
+        workouts: workoutWeek,
+        macros,
+        steps: dailySteps,
+        wellness,
+      }),
+    [dailySteps, wellness, macros],
+  );
+
   if (!client) return null;
 
   const programProgress = client.week / client.totalWeeks;

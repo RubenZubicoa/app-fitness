@@ -7,17 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const weeklyScore = {
-  value: 86,
-  label: 'Puntuación semanal',
-  breakdown: [
-    { label: 'Entrenos', value: 92 },
-    { label: 'Nutrición', value: 88 },
-    { label: 'Pasos', value: 79 },
-    { label: 'Descanso', value: 74 },
-  ],
-};
-
 export const workoutWeek = [
   { label: 'L', value: 100, highlight: true },
   { label: 'M', value: 100, highlight: true },
@@ -28,44 +17,12 @@ export const workoutWeek = [
   { label: 'D', value: 0, highlight: false },
 ];
 
-export const macros = {
-  calories: 1850,
-  target: 1900,
-  items: [
-    { key: 'prot', label: 'Proteínas', shortLabel: 'Proteínas', grams: 140, target: 150, tone: 'primary' },
-    { key: 'carbs', label: 'Carbohidratos', shortLabel: 'Carbohidratos', grams: 180, target: 200, tone: 'gold' },
-    { key: 'fats', label: 'Grasas', shortLabel: 'Grasas', grams: 55, target: 60, tone: 'teal' },
-  ],
-} as const;
-
 export const meals = [
   { name: 'Desayuno', kcal: 420, time: '08:00', items: 'Avena, claras y fruta', icon: 'cafe-outline' },
   { name: 'Comida', kcal: 620, time: '14:00', items: 'Pollo, arroz y verduras', icon: 'restaurant-outline' },
   { name: 'Merienda', kcal: 240, time: '18:00', items: 'Yogur griego y nueces', icon: 'nutrition-outline' },
   { name: 'Cena', kcal: 480, time: '21:00', items: 'Salmón y ensalada', icon: 'fish-outline' },
 ] as const;
-
-export const shoppingList = [
-  { item: 'Pechuga de pollo', qty: '1 kg', done: true },
-  { item: 'Arroz integral', qty: '500 g', done: true },
-  { item: 'Salmón fresco', qty: '400 g', done: false },
-  { item: 'Yogur griego', qty: '4 uds', done: false },
-  { item: 'Espinacas', qty: '2 bolsas', done: false },
-  { item: 'Avena', qty: '1 kg', done: true },
-  { item: 'Huevos', qty: '12 uds', done: false },
-];
-
-export const supplements: {
-  name: string;
-  dose: string;
-  when: string;
-  icon: Ionicon;
-}[] = [
-  { name: 'Proteína Whey', dose: '1 scoop', when: 'Post-entreno', icon: 'flask-outline' },
-  { name: 'Creatina', dose: '5 g', when: 'Diario', icon: 'water-outline' },
-  { name: 'Omega 3', dose: '2 cáps', when: 'Con la comida', icon: 'leaf-outline' },
-  { name: 'Vitamina D', dose: '1 cáp', when: 'Desayuno', icon: 'sunny-outline' },
-];
 
 export type ExerciseType = 'strength' | 'cardio';
 
