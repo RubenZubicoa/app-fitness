@@ -79,11 +79,10 @@ function buildInitialDrafts(exercises: Exercise[]): Record<string, ExerciseDraft
       };
     } else {
       const count = exercise.seriesCount ?? 3;
-      const defaultReps = exercise.repRange?.min != null ? String(exercise.repRange.min) : '';
       drafts[exercise.name] = {
         strengthSets: Array.from({ length: count }, () => ({
           weightKg: '',
-          reps: defaultReps,
+          reps: '',
         })),
       };
     }
