@@ -22,12 +22,13 @@ import { useDailySteps } from '@/context/daily-steps-context';
 import { useMacros } from '@/context/macros-context';
 import { useWeights } from '@/context/weights-context';
 import { useWellness } from '@/context/wellness-context';
+import { useWorkoutHistory } from '@/context/workout-history-context';
 import { getCurrentPhase, getDaysLeft } from '@/data/program';
 import { computeWeeklyScore } from '@/data/weekly-score';
 import { useTheme } from '@/hooks/use-theme';
-import { workoutWeek } from '@/data/mock';
 import { formatChartDate } from '@/types/measurement';
 import { getLatestWeightValue } from '@/types/weight';
+import { computeWorkoutWeek } from '@/types/workout-history';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -44,6 +45,12 @@ export default function DashboardScreen() {
   const { current: dailySteps } = useDailySteps();
   const { enriched: wellness } = useWellness();
   const { macros } = useMacros();
+  const { workoutHistory } = useWorkoutHistory();
+
+  const workoutWeek = useMemo(
+    () => (client ? computeWorkoutWeek(workoutHistory, client.week) : []),
+    [client, workoutHistory],
+  );
 
   const weeklyScore = useMemo(
     () =>
@@ -53,7 +60,7 @@ export default function DashboardScreen() {
         steps: dailySteps,
         wellness,
       }),
-    [dailySteps, wellness, macros],
+    [dailySteps, wellness, macros, workoutWeek],
   );
 
   if (!client) return null;

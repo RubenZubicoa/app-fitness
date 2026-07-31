@@ -7,31 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const workoutWeek = [
-  { label: 'L', value: 100, highlight: true },
-  { label: 'M', value: 100, highlight: true },
-  { label: 'X', value: 0, highlight: false },
-  { label: 'J', value: 100, highlight: true },
-  { label: 'V', value: 60, highlight: true },
-  { label: 'S', value: 0, highlight: false },
-  { label: 'D', value: 0, highlight: false },
-];
-
 export const meals = [
   { name: 'Desayuno', kcal: 420, time: '08:00', items: 'Avena, claras y fruta', icon: 'cafe-outline' },
   { name: 'Comida', kcal: 620, time: '14:00', items: 'Pollo, arroz y verduras', icon: 'restaurant-outline' },
   { name: 'Merienda', kcal: 240, time: '18:00', items: 'Yogur griego y nueces', icon: 'nutrition-outline' },
   { name: 'Cena', kcal: 480, time: '21:00', items: 'Salmón y ensalada', icon: 'fish-outline' },
 ] as const;
-
-export const adherenceWeeks = [
-  { label: 'S1', value: 70, highlight: true },
-  { label: 'S2', value: 85, highlight: true },
-  { label: 'S3', value: 80, highlight: true },
-  { label: 'S4', value: 95, highlight: true },
-  { label: 'S5', value: 88, highlight: true },
-  { label: 'S6', value: 100, highlight: true },
-];
 
 export const reviews = [
   {

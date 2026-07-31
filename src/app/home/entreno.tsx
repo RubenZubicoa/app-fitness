@@ -16,9 +16,13 @@ import { Brand, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useRoutine } from '@/context/routine-context';
 import { useWorkoutHistory } from '@/context/workout-history-context';
-import { adherenceWeeks, workoutWeek } from '@/data/mock';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  computeAdherenceWeeks,
+  computeWorkoutWeek,
+  countWorkoutsInWeek,
+} from '@/types/workout-history';
 
 export default function EntrenoScreen() {
   const theme = useTheme();
@@ -32,9 +36,18 @@ export default function EntrenoScreen() {
   } = useWorkoutHistory();
   if (!client) return null;
 
-  const completed = routine.filter((d) => d.done).length;
+  const plannedPerWeek = routine.length;
+  const completed = countWorkoutsInWeek(workoutHistory, client.week);
   const adherence =
-    routine.length > 0 ? Math.round((completed / routine.length) * 100) : 0;
+    plannedPerWeek > 0
+      ? Math.max(0, Math.min(100, Math.round((completed / plannedPerWeek) * 100)))
+      : 0;
+  const adherenceWeeks = computeAdherenceWeeks(
+    workoutHistory,
+    plannedPerWeek,
+    client.week,
+  );
+  const workoutWeek = computeWorkoutWeek(workoutHistory, client.week);
   const phase = getCurrentPhase(client.phase);
 
   return (
@@ -62,7 +75,7 @@ export default function EntrenoScreen() {
             Esta semana
           </ThemedText>
           <ThemedText type="display" style={styles.statNum}>
-            {completed}/{routine.length}
+            {completed}/{plannedPerWeek}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             entrenos completados
@@ -77,10 +90,15 @@ export default function EntrenoScreen() {
           <View style={styles.weekHeader}>
             <ThemedText type="h3">Marca tus entrenos</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              3 de 4 completados
+              {completed} de {plannedPerWeek || '—'} completados
             </ThemedText>
           </View>
-          <BarChart data={workoutWeek} height={150} colors={Brand.gradientPrimary} />
+          <BarChart
+            data={workoutWeek}
+            height={150}
+            max={100}
+            colors={Brand.gradientPrimary}
+          />
         </Card>
       </View>
 
@@ -189,7 +207,22 @@ export default function EntrenoScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.adherenceNote}>
             Porcentaje de entrenos completados por semana
           </ThemedText>
-          <BarChart data={adherenceWeeks} height={170} max={100} colors={Brand.gradientPrimary} />
+          {historyLoading ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Calculando adherencia…
+            </ThemedText>
+          ) : adherenceWeeks.length === 0 ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay datos de adherencia.
+            </ThemedText>
+          ) : (
+            <BarChart
+              data={adherenceWeeks}
+              height={170}
+              max={100}
+              colors={Brand.gradientPrimary}
+            />
+          )}
         </Card>
       </View>
     </Screen>

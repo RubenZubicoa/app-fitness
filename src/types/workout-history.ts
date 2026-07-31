@@ -45,6 +45,108 @@ export function groupWorkoutHistoryByWeek(entries: WorkoutHistoryEntry[]) {
     .map(([week, items]) => ({ week, items }));
 }
 
+export type AdherenceWeek = {
+  label: string;
+  value: number;
+  highlight?: boolean;
+};
+
+/**
+ * Adherencia histórica por semana:
+ * sesiones completadas / entrenos planificados en la rutina × 100.
+ */
+export function computeAdherenceWeeks(
+  history: WorkoutHistoryEntry[],
+  plannedPerWeek: number,
+  currentWeek: number,
+): AdherenceWeek[] {
+  const planned = Math.max(0, plannedPerWeek);
+  const counts = new Map<number, number>();
+  let maxHistoryWeek = 0;
+
+  for (const entry of history) {
+    const week = Number(entry.week);
+    if (!Number.isFinite(week) || week <= 0) continue;
+    counts.set(week, (counts.get(week) ?? 0) + 1);
+    if (week > maxHistoryWeek) maxHistoryWeek = week;
+  }
+
+  const lastWeek = Math.max(1, currentWeek, maxHistoryWeek);
+  const weeks: AdherenceWeek[] = [];
+
+  for (let week = 1; week <= lastWeek; week++) {
+    const completed = counts.get(week) ?? 0;
+    const value =
+      planned <= 0
+        ? 0
+        : Math.max(0, Math.min(100, Math.round((completed / planned) * 100)));
+    weeks.push({
+      label: `S${week}`,
+      value,
+      highlight: value > 0,
+    });
+  }
+
+  return weeks;
+}
+
+/** Sesiones del histórico para una semana concreta. */
+export function countWorkoutsInWeek(
+  history: WorkoutHistoryEntry[],
+  week: number,
+): number {
+  return history.filter((entry) => entry.week === week).length;
+}
+
+export type WorkoutWeekDay = {
+  label: string;
+  value: number;
+  highlight?: boolean;
+};
+
+const WEEKDAY_BARS: { prefixes: string[]; label: string }[] = [
+  { prefixes: ['lun'], label: 'L' },
+  { prefixes: ['mar'], label: 'M' },
+  { prefixes: ['mié', 'mie'], label: 'X' },
+  { prefixes: ['jue'], label: 'J' },
+  { prefixes: ['vie'], label: 'V' },
+  { prefixes: ['sáb', 'sab'], label: 'S' },
+  { prefixes: ['dom'], label: 'D' },
+];
+
+/** Extrae la etiqueta L–D desde `date` (ej. "Lun 26 may"). */
+function weekdayLabelFromDate(date: string): string | null {
+  const prefix = date.trim().toLowerCase().slice(0, 3);
+  const match = WEEKDAY_BARS.find((day) => day.prefixes.includes(prefix));
+  return match?.label ?? null;
+}
+
+/**
+ * Checks semanales (L–D) de una semana:
+ * 100 si hay al menos una sesión ese día, 0 si no.
+ */
+export function computeWorkoutWeek(
+  history: WorkoutHistoryEntry[],
+  week: number,
+): WorkoutWeekDay[] {
+  const completedLabels = new Set<string>();
+
+  for (const entry of history) {
+    if (entry.week !== week) continue;
+    const label = weekdayLabelFromDate(entry.date);
+    if (label) completedLabels.add(label);
+  }
+
+  return WEEKDAY_BARS.map(({ label }) => {
+    const done = completedLabels.has(label);
+    return {
+      label,
+      value: done ? 100 : 0,
+      highlight: done,
+    };
+  });
+}
+
 function normalizeStrengthSets(value: unknown): StrengthSetLog[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.map((entry) => {
