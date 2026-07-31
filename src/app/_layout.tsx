@@ -9,10 +9,12 @@ import { DailyStepsProvider } from '@/context/daily-steps-context';
 import { MacrosProvider } from '@/context/macros-context';
 import { MeasurementsProvider } from '@/context/measurements-context';
 import { ProgramsProvider } from '@/context/programs-context';
+import { RoutineProvider } from '@/context/routine-context';
 import { ShoppingListProvider } from '@/context/shopping-list-context';
 import { SupplementsProvider } from '@/context/supplements-context';
 import { WeightsProvider } from '@/context/weights-context';
 import { WellnessProvider } from '@/context/wellness-context';
+import { WorkoutHistoryProvider } from '@/context/workout-history-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 
 SplashScreen.preventAutoHideAsync();
@@ -73,7 +75,11 @@ export default function RootLayout() {
                     <ShoppingListProvider>
                       <MacrosProvider>
                         <SupplementsProvider>
-                          <RootNavigator />
+                          <RoutineProvider>
+                            <WorkoutHistoryProvider>
+                              <RootNavigator />
+                            </WorkoutHistoryProvider>
+                          </RoutineProvider>
                         </SupplementsProvider>
                       </MacrosProvider>
                     </ShoppingListProvider>

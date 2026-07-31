@@ -11,9 +11,9 @@ import { GradientHeader } from '@/components/ui/gradient-header';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useRoutine } from '@/context/routine-context';
 import { useTheme } from '@/hooks/use-theme';
-import type { Exercise } from '@/data/mock';
-import { formatRepRange, routine } from '@/data/mock';
+import { formatRepRange, type Exercise } from '@/types/routine-day';
 
 function formatTime(total: number) {
   const m = Math.floor(total / 60)
@@ -28,6 +28,7 @@ export default function SesionEntrenoScreen() {
   const router = useRouter();
   const { day } = useLocalSearchParams<{ day?: string }>();
   const dayIndex = Number(day ?? 0);
+  const { routine, loading, error } = useRoutine();
   const session = routine[dayIndex] ?? routine[0];
 
   const [started, setStarted] = useState(false);
@@ -48,6 +49,27 @@ export default function SesionEntrenoScreen() {
     setStarted(true);
     setRunning(true);
   };
+
+  if (loading) {
+    return (
+      <Screen withTabBar={false}>
+        <ThemedText type="body" themeColor="textSecondary">
+          Cargando sesión…
+        </ThemedText>
+      </Screen>
+    );
+  }
+
+  if (error || !session) {
+    return (
+      <Screen withTabBar={false}>
+        <ThemedText type="body" themeColor="textSecondary">
+          {error ?? 'No hay día de rutina disponible.'}
+        </ThemedText>
+        <Button title="Volver" variant="ghost" icon="close" onPress={() => router.back()} />
+      </Screen>
+    );
+  }
 
   const totalSeries = session.exercises.reduce(
     (acc, ex) => acc + (ex.type === 'strength' ? ex.seriesCount ?? 0 : 1),

@@ -12,9 +12,11 @@ import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
-import { Brand, Radius, Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
-import { adherenceWeeks, routine, workoutHistory, workoutWeek } from '@/data/mock';
+import { useRoutine } from '@/context/routine-context';
+import { useWorkoutHistory } from '@/context/workout-history-context';
+import { adherenceWeeks, workoutWeek } from '@/data/mock';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -22,10 +24,17 @@ export default function EntrenoScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { client } = useClient();
+  const { routine, loading: routineLoading, error: routineError } = useRoutine();
+  const {
+    workoutHistory,
+    loading: historyLoading,
+    error: historyError,
+  } = useWorkoutHistory();
   if (!client) return null;
 
   const completed = routine.filter((d) => d.done).length;
-  const adherence = Math.round((completed / routine.length) * 100);
+  const adherence =
+    routine.length > 0 ? Math.round((completed / routine.length) * 100) : 0;
   const phase = getCurrentPhase(client.phase);
 
   return (
@@ -77,20 +86,29 @@ export default function EntrenoScreen() {
 
       <View>
         <SectionHeader title="Rutina actual" actionLabel="Ver explicación" />
-        <View style={styles.days}>
-          {routine.map((day, index) => (
-            <Card key={day.day} style={styles.dayCard}>
-              <View style={styles.dayHeader}>
-                <View style={styles.dayLeft}>
-                  <View
-                    style={[
-                      styles.check,
-                      day.done
-                        ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                        : { borderColor: theme.border },
-                    ]}>
-                    {day.done && <Ionicons name="checkmark" size={16} color="#0A1B33" />}
-                  </View>
+        {routineLoading ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando rutina…
+            </ThemedText>
+          </Card>
+        ) : routineError ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              {routineError}
+            </ThemedText>
+          </Card>
+        ) : routine.length === 0 ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              No hay días de rutina configurados.
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.days}>
+            {routine.map((day, index) => (
+              <Card key={day._id || day.day} style={styles.dayCard}>
+                <View style={styles.dayHeader}>
                   <View style={styles.flex}>
                     <ThemedText type="h3">
                       {day.day} · {day.focus}
@@ -100,34 +118,32 @@ export default function EntrenoScreen() {
                     </ThemedText>
                   </View>
                 </View>
-                <Badge label={day.done ? 'Hecho' : 'Pendiente'} tone={day.done ? 'success' : 'neutral'} />
-              </View>
-              <View style={styles.exercises}>
-                {day.exercises.map((ex) => (
-                  <View key={ex.name} style={styles.exerciseRow}>
-                    <Ionicons
-                      name={ex.type === 'cardio' ? 'heart' : 'ellipse'}
-                      size={ex.type === 'cardio' ? 12 : 6}
-                      color={theme.primary}
-                    />
-                    <ThemedText type="body" style={styles.exName}>
-                      {ex.name}
-                    </ThemedText>
-                    <ThemedText type="caption" themeColor="textMuted">
-                      {ex.sets}
-                    </ThemedText>
-                  </View>
-                ))}
-              </View>
-              <Button
-                title={day.done ? 'Repetir entrenamiento' : 'Iniciar entrenamiento'}
-                icon="play"
-                variant={day.done ? 'secondary' : 'primary'}
-                onPress={() => router.push(`/sesion-entreno?day=${index}`)}
-              />
-            </Card>
-          ))}
-        </View>
+                <View style={styles.exercises}>
+                  {day.exercises.map((ex) => (
+                    <View key={ex.name} style={styles.exerciseRow}>
+                      <Ionicons
+                        name={ex.type === 'cardio' ? 'heart' : 'ellipse'}
+                        size={ex.type === 'cardio' ? 12 : 6}
+                        color={theme.primary}
+                      />
+                      <ThemedText type="body" style={styles.exName}>
+                        {ex.name}
+                      </ThemedText>
+                      <ThemedText type="caption" themeColor="textMuted">
+                        {ex.sets}
+                      </ThemedText>
+                    </View>
+                  ))}
+                </View>
+                <Button
+                  title="Iniciar entrenamiento"
+                  icon="play"
+                  onPress={() => router.push(`/sesion-entreno?day=${index}`)}
+                />
+              </Card>
+            ))}
+          </View>
+        )}
       </View>
 
       <View>
@@ -137,19 +153,33 @@ export default function EntrenoScreen() {
           onAction={() => router.push('/historico-entreno' as Href)}
         />
         <View style={styles.historyList}>
-          {workoutHistory.slice(0, 3).map((entry) => (
-            <WorkoutHistoryCard
-              key={entry.id}
-              entry={entry}
-              compact
-              onPress={() =>
-                router.push({
-                  pathname: '/historico-entreno-detalle',
-                  params: { id: entry.id },
-                } as Href)
-              }
-            />
-          ))}
+          {historyLoading ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando histórico…
+            </ThemedText>
+          ) : historyError ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              {historyError}
+            </ThemedText>
+          ) : workoutHistory.length === 0 ? (
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay sesiones registradas.
+            </ThemedText>
+          ) : (
+            workoutHistory.slice(0, 3).map((entry) => (
+              <WorkoutHistoryCard
+                key={entry._id}
+                entry={entry}
+                compact
+                onPress={() =>
+                  router.push({
+                    pathname: '/historico-entreno-detalle',
+                    params: { id: entry._id },
+                  } as Href)
+                }
+              />
+            ))
+          )}
         </View>
       </View>
 
@@ -192,20 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  dayLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    flex: 1,
-  },
-  check: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.sm,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   exercises: { gap: Spacing.two },
   exerciseRow: {

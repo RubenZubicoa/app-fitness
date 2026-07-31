@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { WorkoutHistoryEntry } from '@/data/mock';
+import type { WorkoutHistoryEntry } from '@/types/workout-history';
 
 type WorkoutHistoryCardProps = {
   entry: WorkoutHistoryEntry;
