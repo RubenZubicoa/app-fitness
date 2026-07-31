@@ -9,9 +9,11 @@ import {
 } from 'react';
 
 import {
+  createWorkoutHistory as createWorkoutHistoryApi,
   deleteWorkoutHistory as deleteWorkoutHistoryApi,
   fetchClientWorkoutHistory,
   updateWorkoutHistory as updateWorkoutHistoryApi,
+  type CreateWorkoutHistoryPayload,
 } from '@/api/workout-history';
 import { useClient } from '@/context/client-context';
 import type { WorkoutHistoryEntry } from '@/types/workout-history';
@@ -23,6 +25,7 @@ type WorkoutHistoryContextValue = {
   error: string | null;
   refreshWorkoutHistory: () => Promise<void>;
   getById: (id: string) => WorkoutHistoryEntry | undefined;
+  createWorkout: (payload: Omit<CreateWorkoutHistoryPayload, 'clientId'>) => Promise<WorkoutHistoryEntry>;
   removeExercise: (workoutId: string, exerciseName: string) => Promise<boolean>;
   deleteWorkout: (workoutId: string) => Promise<void>;
 };
@@ -63,6 +66,31 @@ export function WorkoutHistoryProvider({ children }: { children: ReactNode }) {
   const getById = useCallback(
     (id: string) => workoutHistory.find((entry) => entry._id === id),
     [workoutHistory],
+  );
+
+  const createWorkout = useCallback(
+    async (payload: Omit<CreateWorkoutHistoryPayload, 'clientId'>) => {
+      if (!client?._id) {
+        throw new Error('Cliente no disponible');
+      }
+
+      setSaving(true);
+      setError(null);
+      try {
+        const created = await createWorkoutHistoryApi({
+          ...payload,
+          clientId: client._id,
+        });
+        setWorkoutHistory((prev) => [created, ...prev]);
+        return created;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo guardar la sesión');
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [client?._id],
   );
 
   const deleteWorkout = useCallback(async (workoutId: string) => {
@@ -127,6 +155,7 @@ export function WorkoutHistoryProvider({ children }: { children: ReactNode }) {
       error,
       refreshWorkoutHistory,
       getById,
+      createWorkout,
       removeExercise,
       deleteWorkout,
     }),
@@ -137,6 +166,7 @@ export function WorkoutHistoryProvider({ children }: { children: ReactNode }) {
       error,
       refreshWorkoutHistory,
       getById,
+      createWorkout,
       removeExercise,
       deleteWorkout,
     ],

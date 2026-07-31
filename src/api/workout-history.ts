@@ -64,6 +64,28 @@ export async function fetchClientWorkoutHistory(
   return data.map((item) => normalizeWorkoutHistory(item as Record<string, unknown>));
 }
 
+export type CreateWorkoutHistoryPayload = {
+  clientId: string;
+  week: number;
+  date: string;
+  day: string;
+  focus: string;
+  duration: string;
+  durationMinutes: number;
+  exercises: ExerciseLog[];
+};
+
+/** Crea sesión: POST /api/workout-history */
+export async function createWorkoutHistory(
+  payload: CreateWorkoutHistoryPayload,
+): Promise<WorkoutHistoryEntry> {
+  const raw = await request<Record<string, unknown>>('/api/workout-history', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeWorkoutHistory(raw);
+}
+
 /** Actualiza sesión: PUT /api/workout-history/:id */
 export async function updateWorkoutHistory(
   id: string,
