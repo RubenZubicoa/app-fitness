@@ -20,12 +20,13 @@ function formatSteps(value: number) {
 export function DailyStepsCard() {
   const theme = useTheme();
   const { client } = useClient();
-  const { current: steps, loading, error } = useDailySteps();
+  const { current: steps, loading, saving, error, saveTodaySteps } = useDailySteps();
   const todayIndex = getTodayWeekdayIndex();
   const weekLabel = client?.week ?? steps?.week ?? '—';
 
   const [weekValues, setWeekValues] = useState<number[]>([]);
   const [input, setInput] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!steps) {
@@ -56,16 +57,22 @@ export function DailyStepsCard() {
 
   const chartMax = Math.max(goal, ...weekValues, 1);
 
-  const registerSteps = () => {
+  const registerSteps = async () => {
     const parsed = Number(input.replace(/\D/g, ''));
-    if (!parsed || Number.isNaN(parsed)) return;
+    if (!parsed || Number.isNaN(parsed) || saving) return;
 
-    setWeekValues((prev) => {
-      const next = [...prev];
-      next[todayIndex] = parsed;
-      return next;
-    });
-    setInput(String(parsed));
+    setSaveError(null);
+    try {
+      await saveTodaySteps(parsed);
+      setWeekValues((prev) => {
+        const next = [...prev];
+        next[todayIndex] = parsed;
+        return next;
+      });
+      setInput(String(parsed));
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'No se pudieron guardar los pasos');
+    }
   };
 
   if (loading) {
@@ -143,21 +150,33 @@ export function DailyStepsCard() {
             placeholderTextColor={theme.textMuted}
             keyboardType="number-pad"
             returnKeyType="done"
-            onSubmitEditing={registerSteps}
+            onSubmitEditing={() => {
+              void registerSteps();
+            }}
+            editable={!saving}
           />
         </View>
         <Pressable
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: theme.teal },
+            { backgroundColor: theme.teal, opacity: saving ? 0.6 : 1 },
             pressed && styles.pressed,
           ]}
-          onPress={registerSteps}>
+          onPress={() => {
+            void registerSteps();
+          }}
+          disabled={saving}>
           <ThemedText type="smallBold" style={styles.saveBtnText}>
-            Guardar
+            {saving ? '…' : 'Guardar'}
           </ThemedText>
         </Pressable>
       </View>
+
+      {saveError ? (
+        <ThemedText type="caption" themeColor="textSecondary">
+          {saveError}
+        </ThemedText>
+      ) : null}
 
       <View style={styles.chartHeader}>
         <ThemedText type="label" themeColor="textMuted">
