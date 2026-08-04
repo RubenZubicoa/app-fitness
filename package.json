@@ -8,6 +8,7 @@
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.4",
     "expo-constants": "~57.0.3",
+    "expo-dev-client": "~57.0.10",
     "expo-device": "~57.0.0",
     "expo-font": "~57.0.0",
     "expo-glass-effect": "~57.0.0",
@@ -44,7 +45,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:web": "npx expo export --platform web",
+    "deploy:web": "eas deploy"
   },
   "private": true
 }
