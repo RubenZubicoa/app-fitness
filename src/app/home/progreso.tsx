@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -52,6 +53,7 @@ function resolveWellnessTone(
 
 export default function ProgresoScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { client } = useClient();
   const { enrichedLatest, seriesByMasterId, loading, error } = useMeasurements();
   const { weight, loading: weightLoading, error: weightError } = useWeights();
@@ -259,7 +261,12 @@ export default function ProgresoScreen() {
             image="https://picsum.photos/seed/regenesis3/300/400"
           />
         </View>
-        <Button title="Subir nuevas fotos" icon="camera-outline" variant="secondary" />
+        <Button
+          title="Subir nuevas fotos"
+          icon="camera-outline"
+          variant="secondary"
+          onPress={() => router.push('/anadir-registro' as Href)}
+        />
       </View>
 
       <View>
@@ -269,13 +276,19 @@ export default function ProgresoScreen() {
             Registra peso, medidas y cómo te sientes para que tu coach ajuste el plan.
           </ThemedText>
           <View style={styles.registerActions}>
-            <Button title="Añadir registro" icon="add-circle-outline" style={styles.flex} />
+            <Button
+              title="Añadir registro"
+              icon="add-circle-outline"
+              style={styles.flex}
+              onPress={() => router.push('/anadir-registro' as Href)}
+            />
             <Button
               title="Fotos"
               icon="images-outline"
               variant="ghost"
               fullWidth={false}
               style={styles.photoBtn}
+              onPress={() => router.push('/anadir-registro' as Href)}
             />
           </View>
         </Card>

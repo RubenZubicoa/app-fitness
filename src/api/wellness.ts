@@ -18,14 +18,27 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  options?: { allowEmpty?: boolean },
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+      ...init,
     });
   } catch {
     throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
+  }
+
+  if (options?.allowEmpty && res.status === 204) {
+    return undefined as T;
   }
 
   const data = await parseJson(res);
@@ -53,4 +66,20 @@ export async function fetchClientWellness(clientId: string): Promise<Wellness[]>
   const raw = await request<unknown[]>(`/api/wellness/${encodeURIComponent(clientId)}`);
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => normalizeWellness(item as Record<string, unknown>));
+}
+
+export type CreateWellnessPayload = {
+  clientId: string;
+  wellnessId: string;
+  value: number;
+  date: string;
+};
+
+/** Crea sensación: POST /api/wellness */
+export async function createWellness(payload: CreateWellnessPayload): Promise<Wellness> {
+  const raw = await request<Record<string, unknown>>('/api/wellness', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeWellness(raw);
 }

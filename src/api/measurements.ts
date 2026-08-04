@@ -18,14 +18,27 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  options?: { allowEmpty?: boolean },
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+      ...init,
     });
   } catch {
     throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
+  }
+
+  if (options?.allowEmpty && res.status === 204) {
+    return undefined as T;
   }
 
   const data = await parseJson(res);
@@ -53,4 +66,23 @@ export async function fetchClientMeasurements(clientId: string): Promise<Measure
   const raw = await request<unknown[]>(`/api/clients/${encodeURIComponent(clientId)}/measurements`);
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => normalizeMeasurement(item as Record<string, unknown>));
+}
+
+export type CreateMeasurementPayload = {
+  client: string;
+  MeasurementId: string;
+  value: number;
+  delta: number;
+  date: string;
+};
+
+/** Crea medida: POST /api/measurements */
+export async function createMeasurement(
+  payload: CreateMeasurementPayload,
+): Promise<Measurement> {
+  const raw = await request<Record<string, unknown>>('/api/measurements', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeMeasurement(raw);
 }

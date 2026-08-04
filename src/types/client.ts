@@ -1,4 +1,5 @@
 import { normalizeId } from '@/types/program';
+import { getCurrentWeek, getTotalWeeks } from '@/data/program';
 
 export type Client = {
   _id: string;
@@ -21,6 +22,10 @@ export type Client = {
 };
 
 export function normalizeClient(raw: Record<string, unknown>): Client {
+  const startDate = String(raw.startDate ?? '');
+  const endDate = String(raw.endDate ?? '');
+  const hasDates = Boolean(startDate && endDate);
+
   return {
     _id: normalizeId(raw._id),
     name: String(raw.name ?? ''),
@@ -31,10 +36,10 @@ export function normalizeClient(raw: Record<string, unknown>): Client {
     coach: String(raw.coach ?? ''),
     plan: String(raw.plan ?? ''),
     program: normalizeId(raw.program),
-    startDate: String(raw.startDate ?? ''),
-    endDate: String(raw.endDate ?? ''),
-    week: Number(raw.week ?? 1),
-    totalWeeks: Number(raw.totalWeeks ?? 12),
+    startDate,
+    endDate,
+    week: hasDates ? getCurrentWeek(startDate, endDate) : Number(raw.week ?? 1),
+    totalWeeks: hasDates ? getTotalWeeks(startDate, endDate) : Number(raw.totalWeeks ?? 12),
     phase: Number(raw.phase ?? 1),
     totalPhases: Number(raw.totalPhases ?? 3),
     avatar: String(raw.avatar ?? ''),

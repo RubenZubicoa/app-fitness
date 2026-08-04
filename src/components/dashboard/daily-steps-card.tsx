@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Brand, Radius, Spacing } from '@/constants/theme';
+import { useClient } from '@/context/client-context';
 import { useDailySteps } from '@/context/daily-steps-context';
 import { useTheme } from '@/hooks/use-theme';
 import { getTodayWeekdayIndex } from '@/types/daily-steps';
@@ -18,8 +19,10 @@ function formatSteps(value: number) {
 /** Tarjeta de pasos diarios con registro y gráfico semanal. */
 export function DailyStepsCard() {
   const theme = useTheme();
+  const { client } = useClient();
   const { current: steps, loading, error } = useDailySteps();
   const todayIndex = getTodayWeekdayIndex();
+  const weekLabel = client?.week ?? steps?.week ?? '—';
 
   const [weekValues, setWeekValues] = useState<number[]>([]);
   const [input, setInput] = useState('');
@@ -102,7 +105,7 @@ export function DailyStepsCard() {
         <View style={styles.headerInfo}>
           <ThemedText type="h3">{formatSteps(todaySteps)} pasos</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Hoy · semana {steps.week} · objetivo {formatSteps(goal)}
+            Hoy · semana {weekLabel} · objetivo {formatSteps(goal)}
           </ThemedText>
         </View>
         <Badge
@@ -158,7 +161,7 @@ export function DailyStepsCard() {
 
       <View style={styles.chartHeader}>
         <ThemedText type="label" themeColor="textMuted">
-          Semana {steps.week}
+          Semana {weekLabel}
         </ThemedText>
         <ThemedText type="caption" themeColor="textSecondary">
           Media{' '}
