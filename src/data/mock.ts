@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 
+import type { SocialFeedEntry } from '@/types/social-feed';
+
 /**
  * Datos de ejemplo (estáticos) para la maqueta de REGENESIS.
  * El modelo Client se obtiene del API; aquí solo quedan datos de UI aún no conectados.
@@ -58,37 +60,233 @@ export const videoLibrary = [
   },
 ] as const;
 
-export const socialFeed = [
+/** Feed demo tipado como SocialFeedEntry (alineado con WorkoutHistory, Weight, Measurement…). */
+export const socialFeed: SocialFeedEntry[] = [
   {
-    user: 'Marcos R.',
-    avatar: 'https://i.pravatar.cc/100?img=12',
-    action: 'completó Día B · Tren inferior',
-    time: 'hace 20 min',
+    _id: 'sf-workout-1',
+    clientId: 'c-marcos',
+    author: {
+      clientId: 'c-marcos',
+      fullName: 'Marcos R.',
+      avatar: 'https://i.pravatar.cc/100?img=12',
+    },
+    createdAt: new Date(Date.now() - 20 * 60_000).toISOString(),
     likes: 12,
-    kind: 'workout' as const,
+    comments: 3,
+    kind: 'workout',
+    workoutHistoryId: 'wh-demo-1',
+    week: 8,
+    day: 'Día B',
+    focus: 'Tren inferior',
+    duration: '58 min',
+    durationMinutes: 58,
+    exerciseCount: 4,
   },
   {
-    user: 'Ana G.',
-    avatar: 'https://i.pravatar.cc/100?img=32',
-    action: 'alcanzó 12.400 pasos hoy',
-    time: 'hace 1 h',
+    _id: 'sf-weight-1',
+    clientId: 'c-ana',
+    author: {
+      clientId: 'c-ana',
+      fullName: 'Ana G.',
+      avatar: 'https://i.pravatar.cc/100?img=32',
+    },
+    createdAt: new Date(Date.now() - 60 * 60_000).toISOString(),
+    likes: 28,
+    comments: 7,
+    kind: 'weight',
+    weightId: 'w-demo-1',
+    label: '10 may',
+    previousKg: 72.4,
+    currentKg: 71.2,
+    unit: 'kg',
+  },
+  {
+    _id: 'sf-photos-1',
+    clientId: 'c-lucia',
+    author: {
+      clientId: 'c-lucia',
+      fullName: 'Lucía F.',
+      avatar: 'https://i.pravatar.cc/100?img=47',
+    },
+    createdAt: new Date(Date.now() - 3 * 60 * 60_000).toISOString(),
+    likes: 41,
+    comments: 12,
+    kind: 'photos',
+    week: 6,
+    photos: [
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=500&fit=crop',
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=500&fit=crop',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&h=500&fit=crop',
+    ],
+  },
+  {
+    _id: 'sf-measurement-1',
+    clientId: 'c-carlos',
+    author: {
+      clientId: 'c-carlos',
+      fullName: 'Carlos M.',
+      avatar: 'https://i.pravatar.cc/100?img=15',
+    },
+    createdAt: new Date(Date.now() - 5 * 60 * 60_000).toISOString(),
+    likes: 19,
+    comments: 4,
+    kind: 'measurement',
+    measurementId: 'm-demo-1',
+    MeasurementId: 'mm-waist',
+    label: 'Cintura',
+    unit: 'cm',
+    value: 84,
+    delta: -2,
+    date: '2026-05-10',
+  },
+  {
+    _id: 'sf-steps-1',
+    clientId: 'c-ana',
+    author: {
+      clientId: 'c-ana',
+      fullName: 'Ana G.',
+      avatar: 'https://i.pravatar.cc/100?img=32',
+    },
+    createdAt: new Date(Date.now() - 6 * 60 * 60_000).toISOString(),
     likes: 8,
-    kind: 'steps' as const,
+    comments: 1,
+    kind: 'steps',
+    dailyStepsId: 'ds-demo-1',
+    week: 8,
+    dayLabel: 'Vie',
+    steps: 12400,
+    goal: 10000,
   },
   {
-    user: 'Lucía F.',
-    avatar: 'https://i.pravatar.cc/100?img=47',
-    action: 'superó el reto “7 días sin azúcar”',
-    time: 'hace 3 h',
-    likes: 21,
-    kind: 'challenge' as const,
+    _id: 'sf-workout-2',
+    clientId: 'c-sofia',
+    author: {
+      clientId: 'c-sofia',
+      fullName: 'Sofía P.',
+      avatar: 'https://i.pravatar.cc/100?img=5',
+    },
+    createdAt: new Date(Date.now() - 8 * 60 * 60_000).toISOString(),
+    likes: 15,
+    comments: 2,
+    kind: 'workout',
+    workoutHistoryId: 'wh-demo-2',
+    week: 8,
+    day: 'Día A',
+    focus: 'Tren superior',
+    duration: '55 min',
+    durationMinutes: 55,
+    exerciseCount: 4,
+  },
+  {
+    _id: 'sf-challenge-1',
+    clientId: 'c-lucia',
+    author: {
+      clientId: 'c-lucia',
+      fullName: 'Lucía F.',
+      avatar: 'https://i.pravatar.cc/100?img=47',
+    },
+    createdAt: new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
+    likes: 52,
+    comments: 14,
+    kind: 'challenge',
+    title: '7 días sin azúcar',
+    completedDays: 7,
+    totalDays: 7,
+    completed: true,
+  },
+  {
+    _id: 'sf-wellness-1',
+    clientId: 'c-diego',
+    author: {
+      clientId: 'c-diego',
+      fullName: 'Diego V.',
+      avatar: 'https://i.pravatar.cc/100?img=33',
+    },
+    createdAt: new Date(Date.now() - 26 * 60 * 60_000).toISOString(),
+    likes: 9,
+    comments: 0,
+    kind: 'wellness',
+    date: '2026-05-09',
+    items: [
+      {
+        wellnessId: 'wel-1',
+        masterId: 'wm-energy',
+        key: 'energy',
+        label: 'Energía',
+        value: 9,
+      },
+      {
+        wellnessId: 'wel-2',
+        masterId: 'wm-sleep',
+        key: 'sleep',
+        label: 'Sueño',
+        value: 8,
+      },
+      {
+        wellnessId: 'wel-3',
+        masterId: 'wm-mood',
+        key: 'mood',
+        label: 'Ánimo',
+        value: 9,
+      },
+    ],
   },
 ];
 
 export const leaderboard = [
-  { user: 'Ana G.', points: 980, avatar: 'https://i.pravatar.cc/100?img=32' },
-  { user: 'Lucía F.', points: 910, avatar: 'https://i.pravatar.cc/100?img=47' },
-  { user: 'Marcos R.', points: 870, avatar: 'https://i.pravatar.cc/100?img=12' },
+  {
+    clientId: 'c-ana',
+    fullName: 'Ana G.',
+    points: 980,
+    avatar: 'https://i.pravatar.cc/100?img=32',
+    streak: 12,
+  },
+  {
+    clientId: 'c-lucia',
+    fullName: 'Lucía F.',
+    points: 910,
+    avatar: 'https://i.pravatar.cc/100?img=47',
+    streak: 9,
+  },
+  {
+    clientId: 'c-marcos',
+    fullName: 'Marcos R.',
+    points: 870,
+    avatar: 'https://i.pravatar.cc/100?img=12',
+    streak: 7,
+  },
+  {
+    clientId: 'c-sofia',
+    fullName: 'Sofía P.',
+    points: 820,
+    avatar: 'https://i.pravatar.cc/100?img=5',
+    streak: 5,
+  },
+  {
+    clientId: 'c-carlos',
+    fullName: 'Carlos M.',
+    points: 760,
+    avatar: 'https://i.pravatar.cc/100?img=15',
+    streak: 4,
+  },
+];
+
+export const communityHighlights = [
+  {
+    label: 'Miembros activos',
+    value: '128',
+    icon: 'people-outline' as Ionicon,
+  },
+  {
+    label: 'Logros hoy',
+    value: '34',
+    icon: 'sparkles' as Ionicon,
+  },
+  {
+    label: 'Fotos nuevas',
+    value: '11',
+    icon: 'camera-outline' as Ionicon,
+  },
 ];
 
 export const onboardingSteps: {

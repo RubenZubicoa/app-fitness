@@ -19,6 +19,14 @@ import { useTheme } from '@/hooks/use-theme';
 
 const menuItems = [
   {
+    title: 'Comunidad',
+    subtitle: 'Logros, fotos y ranking de la comunidad',
+    icon: 'people-outline',
+    href: '/social',
+    tone: 'teal',
+    badge: 'Nuevo',
+  },
+  {
     title: 'Revisiones',
     subtitle: 'Citas semanales y recordatorios',
     icon: 'calendar-outline',
@@ -48,6 +56,7 @@ const toneColors = {
   primary: { color: Brand.blue, bg: '#E4EEFD' },
   gold: { color: Brand.gold, bg: '#FBF0D8' },
   purple: { color: Brand.purple, bg: '#EDE7FE' },
+  teal: { color: Brand.teal, bg: '#D8F5F1' },
 };
 
 export default function MasScreen() {
@@ -67,7 +76,7 @@ export default function MasScreen() {
         <GradientHeader
           eyebrow="Más opciones"
           title="Tu espacio"
-          subtitle="Revisiones, formación y resultados"
+          subtitle="Comunidad, revisiones, formación y resultados"
           gradient={Brand.gradientNavy}
         />
       }>
@@ -107,7 +116,16 @@ export default function MasScreen() {
                     <ThemedText type="small" themeColor="textSecondary">
                       {item.subtitle}
                     </ThemedText>
-                    <Badge label={item.badge} tone={item.tone === 'purple' ? 'primary' : item.tone} />
+                    <Badge
+                      label={item.badge}
+                      tone={
+                        item.tone === 'purple'
+                          ? 'primary'
+                          : item.tone === 'teal'
+                            ? 'primary'
+                            : item.tone
+                      }
+                    />
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
                 </Card>
