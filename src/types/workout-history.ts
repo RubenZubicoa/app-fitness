@@ -20,6 +20,13 @@ export type ExerciseLog = {
   cardio?: CardioLog;
 };
 
+/** Foto o vídeo adjunto a una sesión. */
+export type WorkoutMedia = {
+  uri: string;
+  type: 'image' | 'video';
+  mimeType?: string;
+};
+
 export type WorkoutHistoryEntry = {
   _id: string;
   clientId: string;
@@ -30,6 +37,7 @@ export type WorkoutHistoryEntry = {
   duration: string;
   durationMinutes: number;
   exercises: ExerciseLog[];
+  media?: WorkoutMedia[];
 };
 
 /** Agrupa el histórico por semana (orden descendente). */
@@ -188,6 +196,23 @@ function normalizeExerciseLog(raw: Record<string, unknown>): ExerciseLog {
 
 export function normalizeWorkoutHistory(raw: Record<string, unknown>): WorkoutHistoryEntry {
   const exercisesRaw = Array.isArray(raw.exercises) ? raw.exercises : [];
+  const mediaRaw = Array.isArray(raw.media) ? raw.media : [];
+  const media: WorkoutMedia[] = mediaRaw
+    .map((entry) => {
+      const item = (entry ?? {}) as Record<string, unknown>;
+      const uri = String(item.uri ?? '').trim();
+      const typeRaw = String(item.type ?? '').trim();
+      const type: WorkoutMedia['type'] | null =
+        typeRaw === 'video' ? 'video' : typeRaw === 'image' ? 'image' : null;
+      if (!uri || !type) return null;
+      return {
+        uri,
+        type,
+        ...(item.mimeType ? { mimeType: String(item.mimeType) } : {}),
+      };
+    })
+    .filter((item): item is WorkoutMedia => item != null);
+
   return {
     _id: normalizeId(raw._id),
     clientId: normalizeId(raw.clientId),
@@ -200,5 +225,6 @@ export function normalizeWorkoutHistory(raw: Record<string, unknown>): WorkoutHi
     exercises: exercisesRaw.map((entry) =>
       normalizeExerciseLog((entry ?? {}) as Record<string, unknown>),
     ),
+    ...(media.length > 0 ? { media } : {}),
   };
 }

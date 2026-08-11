@@ -12,6 +12,7 @@ import { ProgramsProvider } from '@/context/programs-context';
 import { RoutineProvider } from '@/context/routine-context';
 import { ShoppingListProvider } from '@/context/shopping-list-context';
 import { MealProvider } from '@/context/meal-context';
+import { SocialFeedProvider } from '@/context/social-feed-context';
 import { SupplementsProvider } from '@/context/supplements-context';
 import { WeightsProvider } from '@/context/weights-context';
 import { WellnessProvider } from '@/context/wellness-context';
@@ -80,7 +81,9 @@ export default function RootLayout() {
                         <SupplementsProvider>
                           <RoutineProvider>
                             <WorkoutHistoryProvider>
-                              <RootNavigator />
+                              <SocialFeedProvider>
+                                <RootNavigator />
+                              </SocialFeedProvider>
                             </WorkoutHistoryProvider>
                           </RoutineProvider>
                         </SupplementsProvider>

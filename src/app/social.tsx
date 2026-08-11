@@ -14,8 +14,8 @@ import { Brand, Radius, Spacing } from '@/constants/theme';
 import {
   communityHighlights,
   leaderboard,
-  socialFeed,
 } from '@/data/mock';
+import { useSocialFeed } from '@/context/social-feed-context';
 import { useTheme } from '@/hooks/use-theme';
 import {
   formatRelativeTime,
@@ -24,6 +24,7 @@ import {
   socialFeedMetric,
   type SocialFeedKind,
 } from '@/types/social-feed';
+import type { WorkoutMedia } from '@/types/workout-history';
 
 type FilterKey = 'all' | SocialFeedKind;
 
@@ -73,14 +74,42 @@ function toneColors(
   }
 }
 
+function WorkoutMediaRow({ media }: { media: WorkoutMedia[] }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.photoRow}>
+      {media.map((item) =>
+        item.type === 'image' ? (
+          <Image
+            key={item.uri}
+            source={{ uri: item.uri }}
+            style={styles.photo}
+            contentFit="cover"
+          />
+        ) : (
+          <View
+            key={item.uri}
+            style={[styles.photo, styles.videoThumb, { backgroundColor: theme.primarySoft }]}>
+            <Ionicons name="play-circle" size={28} color={theme.primary} />
+            <ThemedText type="caption" themeColor="primary">
+              Vídeo
+            </ThemedText>
+          </View>
+        ),
+      )}
+    </View>
+  );
+}
+
 export default function SocialScreen() {
   const theme = useTheme();
+  const { feed } = useSocialFeed();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
   const posts = useMemo(
-    () => (filter === 'all' ? socialFeed : socialFeed.filter((p) => p.kind === filter)),
-    [filter],
+    () => (filter === 'all' ? feed : feed.filter((p) => p.kind === filter)),
+    [feed, filter],
   );
 
   const toggleLike = (id: string) => {
@@ -230,6 +259,10 @@ export default function SocialScreen() {
                   </View>
                 ) : null}
 
+                {post.kind === 'workout' && post.media && post.media.length > 0 ? (
+                  <WorkoutMediaRow media={post.media} />
+                ) : null}
+
                 <View style={[styles.postActions, { borderTopColor: theme.border }]}>
                   <Pressable
                     style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
@@ -365,6 +398,11 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radius.md,
     backgroundColor: '#E4E9F1',
+  },
+  videoThumb: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   postActions: {
     flexDirection: 'row',

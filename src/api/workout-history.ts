@@ -3,6 +3,7 @@ import {
   normalizeWorkoutHistory,
   type ExerciseLog,
   type WorkoutHistoryEntry,
+  type WorkoutMedia,
 } from '@/types/workout-history';
 
 type ApiErrorBody = { message?: string };
@@ -73,6 +74,7 @@ export type CreateWorkoutHistoryPayload = {
   duration: string;
   durationMinutes: number;
   exercises: ExerciseLog[];
+  media?: WorkoutMedia[];
 };
 
 /** Crea sesión: POST /api/workout-history */

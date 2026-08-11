@@ -40,7 +40,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permite a Regenesis acceder a tus fotos de progreso."
+          "photosPermission": "Permite a Regenesis acceder a fotos y vídeos de tus entrenos y progreso.",
+          "cameraPermission": "Permite a Regenesis usar la cámara para registrar tu entrenamiento."
         }
       ]
     ],

@@ -4,7 +4,7 @@ import type { DailySteps } from '@/types/daily-steps';
 import type { Measurement, MeasurementMaster } from '@/types/measurement';
 import type { Weight } from '@/types/weight';
 import type { Wellness, WellnessMaster } from '@/types/wellness';
-import type { WorkoutHistoryEntry } from '@/types/workout-history';
+import type { WorkoutHistoryEntry, WorkoutMedia } from '@/types/workout-history';
 
 /**
  * Tipos de logro del feed social.
@@ -46,6 +46,7 @@ export type SocialFeedWorkout = SocialFeedBase & {
   duration: string;
   durationMinutes: number;
   exerciseCount: number;
+  media?: WorkoutMedia[];
 };
 
 /** Peso → Weight (punto de la serie labels/data) */
@@ -234,6 +235,7 @@ export function createWorkoutFeedEntry(input: {
     duration: input.workout.duration,
     durationMinutes: input.workout.durationMinutes,
     exerciseCount: input.workout.exercises.length,
+    ...(input.workout.media?.length ? { media: input.workout.media } : {}),
   };
 }
 
@@ -389,7 +391,24 @@ export function normalizeSocialFeedEntry(raw: Record<string, unknown>): SocialFe
   };
 
   switch (kind) {
-    case 'workout':
+    case 'workout': {
+      const mediaRaw = Array.isArray(raw.media) ? raw.media : [];
+      const media: WorkoutMedia[] = mediaRaw
+        .map((entry) => {
+          const item = (entry ?? {}) as Record<string, unknown>;
+          const uri = String(item.uri ?? '').trim();
+          const typeRaw = String(item.type ?? '').trim();
+          const type: WorkoutMedia['type'] | null =
+            typeRaw === 'video' ? 'video' : typeRaw === 'image' ? 'image' : null;
+          if (!uri || !type) return null;
+          return {
+            uri,
+            type,
+            ...(item.mimeType ? { mimeType: String(item.mimeType) } : {}),
+          };
+        })
+        .filter((item): item is WorkoutMedia => item != null);
+
       return {
         ...base,
         kind,
@@ -400,7 +419,9 @@ export function normalizeSocialFeedEntry(raw: Record<string, unknown>): SocialFe
         duration: String(raw.duration ?? ''),
         durationMinutes: Number(raw.durationMinutes ?? 0),
         exerciseCount: Number(raw.exerciseCount ?? 0),
+        ...(media.length > 0 ? { media } : {}),
       };
+    }
     case 'weight':
       return {
         ...base,

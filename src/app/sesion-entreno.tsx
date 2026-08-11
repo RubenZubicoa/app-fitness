@@ -1,7 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
@@ -13,10 +24,11 @@ import { Screen } from '@/components/ui/screen';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useRoutine } from '@/context/routine-context';
+import { useSocialFeed } from '@/context/social-feed-context';
 import { useWorkoutHistory } from '@/context/workout-history-context';
 import { useTheme } from '@/hooks/use-theme';
 import { formatRepRange, type Exercise } from '@/types/routine-day';
-import type { ExerciseLog } from '@/types/workout-history';
+import type { ExerciseLog, WorkoutMedia } from '@/types/workout-history';
 
 type StrengthSetDraft = {
   weightKg: string;
@@ -130,12 +142,14 @@ export default function SesionEntrenoScreen() {
   const { client } = useClient();
   const { routine, loading, error } = useRoutine();
   const { createWorkout, saving } = useWorkoutHistory();
+  const { publishWorkout } = useSocialFeed();
   const session = routine[dayIndex] ?? routine[0];
 
   const [started, setStarted] = useState(false);
   const [running, setRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, ExerciseDraft>>({});
+  const [media, setMedia] = useState<WorkoutMedia[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionId = session?._id ?? '';
@@ -202,6 +216,48 @@ export default function SesionEntrenoScreen() {
     }));
   };
 
+  const pickMedia = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      const message = 'Necesitamos permiso para acceder a tu galería.';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Permiso requerido', message);
+      }
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      quality: 0.8,
+      allowsMultipleSelection: true,
+      selectionLimit: 6,
+      videoMaxDuration: 60,
+    });
+
+    if (result.canceled || !result.assets?.length) return;
+
+    const next: WorkoutMedia[] = result.assets
+      .map((asset) => {
+        const isVideo =
+          asset.type === 'video' ||
+          (asset.mimeType?.startsWith('video/') ?? false);
+        return {
+          uri: asset.uri,
+          type: (isVideo ? 'video' : 'image') as WorkoutMedia['type'],
+          ...(asset.mimeType ? { mimeType: asset.mimeType } : {}),
+        };
+      })
+      .filter((item) => !!item.uri);
+
+    setMedia((prev) => [...prev, ...next].slice(0, 6));
+  };
+
+  const removeMedia = (uri: string) => {
+    setMedia((prev) => prev.filter((item) => item.uri !== uri));
+  };
+
   const handleSave = async () => {
     if (!client || !session || saving) return;
 
@@ -212,7 +268,7 @@ export default function SesionEntrenoScreen() {
     const exercises = draftsToExerciseLogs(session.exercises, drafts);
 
     try {
-      await createWorkout({
+      const created = await createWorkout({
         week: client.week,
         date: formatSessionDate(),
         day: session.day,
@@ -220,6 +276,11 @@ export default function SesionEntrenoScreen() {
         duration: `${durationMinutes} min`,
         durationMinutes,
         exercises,
+        ...(media.length > 0 ? { media } : {}),
+      });
+      publishWorkout({
+        ...created,
+        ...(media.length > 0 ? { media } : {}),
       });
       router.back();
     } catch (err) {
@@ -300,6 +361,70 @@ export default function SesionEntrenoScreen() {
           />
         ))}
       </View>
+
+      <Card style={styles.mediaCard}>
+        <View style={styles.mediaHeader}>
+          <View style={styles.mediaTitleBlock}>
+            <ThemedText type="h3">Fotos o vídeos</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Opcional · se publicarán en Comunidad
+            </ThemedText>
+          </View>
+          <Button
+            title="Añadir"
+            icon="images-outline"
+            variant="ghost"
+            fullWidth={false}
+            onPress={() => void pickMedia()}
+            disabled={saving || media.length >= 6}
+          />
+        </View>
+
+        {media.length === 0 ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.mediaEmpty,
+              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              pressed && styles.pressed,
+            ]}
+            onPress={() => void pickMedia()}
+            disabled={saving}>
+            <Ionicons name="camera-outline" size={28} color={theme.textMuted} />
+            <ThemedText type="small" themeColor="textMuted">
+              Añade hasta 6 fotos o vídeos de la sesión
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View style={styles.mediaGrid}>
+            {media.map((item) => (
+              <View key={item.uri} style={styles.mediaThumbWrap}>
+                {item.type === 'image' ? (
+                  <Image source={{ uri: item.uri }} style={styles.mediaThumb} />
+                ) : (
+                  <View
+                    style={[
+                      styles.mediaThumb,
+                      styles.mediaVideoThumb,
+                      { backgroundColor: theme.primarySoft },
+                    ]}>
+                    <Ionicons name="play-circle" size={28} color={theme.primary} />
+                    <ThemedText type="caption" themeColor="primary">
+                      Vídeo
+                    </ThemedText>
+                  </View>
+                )}
+                <Pressable
+                  style={styles.mediaRemove}
+                  onPress={() => removeMedia(item.uri)}
+                  hitSlop={8}
+                  accessibilityLabel="Eliminar archivo">
+                  <Ionicons name="close-circle" size={22} color={theme.coral} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
 
       {saveError ? (
         <ThemedText type="body" themeColor="textSecondary" style={styles.saveError}>
@@ -612,6 +737,49 @@ const styles = StyleSheet.create({
   },
   list: { gap: Spacing.three },
   exerciseCard: { gap: Spacing.three },
+  mediaCard: { gap: Spacing.three },
+  mediaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  mediaTitleBlock: { flex: 1, gap: 2 },
+  mediaEmpty: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.four,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  mediaThumbWrap: {
+    width: '31%',
+    aspectRatio: 1,
+    position: 'relative',
+  },
+  mediaThumb: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Radius.md,
+  },
+  mediaVideoThumb: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  mediaRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.pill,
+  },
   exerciseHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',

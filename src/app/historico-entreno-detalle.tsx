@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ function confirmAction(title: string, message: string, onConfirm: () => void) {
 }
 
 export default function HistoricoEntrenoDetalleScreen() {
+  const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const {
@@ -133,6 +134,32 @@ export default function HistoricoEntrenoDetalleScreen() {
           />
         ))}
       </View>
+
+      {entry.media && entry.media.length > 0 ? (
+        <Card style={styles.mediaCard}>
+          <ThemedText type="h3">Fotos y vídeos</ThemedText>
+          <View style={styles.mediaGrid}>
+            {entry.media.map((item) =>
+              item.type === 'image' ? (
+                <Image key={item.uri} source={{ uri: item.uri }} style={styles.mediaThumb} />
+              ) : (
+                <View
+                  key={item.uri}
+                  style={[
+                    styles.mediaThumb,
+                    styles.mediaVideo,
+                    { backgroundColor: theme.primarySoft },
+                  ]}>
+                  <Ionicons name="play-circle" size={28} color={theme.primary} />
+                  <ThemedText type="caption" themeColor="primary">
+                    Vídeo
+                  </ThemedText>
+                </View>
+              ),
+            )}
+          </View>
+        </Card>
+      ) : null}
 
       <Button
         title="Eliminar entrenamiento"
@@ -246,6 +273,23 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 const styles = StyleSheet.create({
   error: { marginBottom: Spacing.two },
   list: { gap: Spacing.three, marginBottom: Spacing.three },
+  mediaCard: { gap: Spacing.three, marginBottom: Spacing.three },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  mediaThumb: {
+    width: '31%',
+    aspectRatio: 1,
+    borderRadius: Radius.md,
+    backgroundColor: '#E4E9F1',
+  },
+  mediaVideo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   card: { gap: Spacing.three },
   header: {
     flexDirection: 'row',

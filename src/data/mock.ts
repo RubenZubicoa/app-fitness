@@ -81,6 +81,16 @@ export const socialFeed: SocialFeedEntry[] = [
     duration: '58 min',
     durationMinutes: 58,
     exerciseCount: 4,
+    media: [
+      {
+        uri: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=500&fit=crop',
+        type: 'image',
+      },
+      {
+        uri: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=500&fit=crop',
+        type: 'image',
+      },
+    ],
   },
   {
     _id: 'sf-weight-1',
