@@ -7,13 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const meals = [
-  { name: 'Desayuno', kcal: 420, time: '08:00', items: 'Avena, claras y fruta', icon: 'cafe-outline' },
-  { name: 'Comida', kcal: 620, time: '14:00', items: 'Pollo, arroz y verduras', icon: 'restaurant-outline' },
-  { name: 'Merienda', kcal: 240, time: '18:00', items: 'Yogur griego y nueces', icon: 'nutrition-outline' },
-  { name: 'Cena', kcal: 480, time: '21:00', items: 'Salmón y ensalada', icon: 'fish-outline' },
-] as const;
-
 export const reviews = [
   {
     title: 'Revisión semanal · Semana 7',

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ProgressRing } from '@/components/charts/progress-ring';
@@ -15,8 +15,8 @@ import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMacros } from '@/context/macros-context';
 import { useShoppingList } from '@/context/shopping-list-context';
+import { useMeals } from '@/context/meal-context';
 import { useSupplements } from '@/context/supplements-context';
-import { meals } from '@/data/mock';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -46,6 +46,16 @@ export default function NutricionScreen() {
     loading: supplementsLoading,
     error: supplementsError,
   } = useSupplements();
+  const {
+    meal,
+    loading: mealsLoading,
+    error: mealsError,
+  } = useMeals();
+  const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
+  const toggleSlot = useCallback(
+    (label: string) => setExpandedSlot((prev) => (prev === label ? null : label)),
+    [],
+  );
   const [newItem, setNewItem] = useState('');
   const [newQty, setNewQty] = useState('');
 
@@ -163,30 +173,79 @@ export default function NutricionScreen() {
       </View>
 
       <View>
-        <SectionHeader title="Comidas de hoy" actionLabel="Ver plan completo" />
-        <View style={styles.meals}>
-          {meals.map((meal) => (
-            <Card key={meal.name} style={styles.mealCard}>
-              <View style={styles.mealRow}>
-                <IconBadge
-                  name={meal.icon}
-                  color={theme.gold}
-                  background={theme.goldSoft}
-                  size={42}
-                />
-                <View style={styles.mealBody}>
-                  <View style={styles.mealTop}>
-                    <ThemedText type="h3">{meal.name}</ThemedText>
-                    <Badge label={`${meal.kcal} kcal`} tone="gold" />
-                  </View>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {meal.time} · {meal.items}
-                  </ThemedText>
-                </View>
-              </View>
-            </Card>
-          ))}
-        </View>
+        <SectionHeader title="Comidas de hoy" />
+        {mealsLoading ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cargando comidas…
+            </ThemedText>
+          </Card>
+        ) : mealsError ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">{mealsError}</ThemedText>
+          </Card>
+        ) : !meal?.slots.length ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              No hay plan de comidas configurado.
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.meals}>
+            {meal.slots.map((slot) => {
+              const isOpen = expandedSlot === slot.label;
+              return (
+                <Card key={slot.label} style={styles.mealCard}>
+                  <Pressable
+                    style={({ pressed }) => [styles.mealRow, pressed && styles.pressed]}
+                    onPress={() => toggleSlot(slot.label)}>
+                    <IconBadge
+                      name={slot.icon}
+                      color={theme.gold}
+                      background={theme.goldSoft}
+                      size={42}
+                    />
+                    <View style={styles.mealBody}>
+                      <View style={styles.mealTop}>
+                        <ThemedText type="h3">{slot.label}</ThemedText>
+                        <Badge label={`${slot.kcal} kcal`} tone="gold" />
+                      </View>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {slot.time} · {slot.items.length} alimento{slot.items.length !== 1 ? 's' : ''}
+                      </ThemedText>
+                    </View>
+                    <Ionicons
+                      name={isOpen ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={theme.textMuted}
+                    />
+                  </Pressable>
+                  {isOpen && (
+                    <View style={styles.mealItems}>
+                      {slot.items.map((item, idx) => (
+                        <View
+                          key={`${item.name}-${idx}`}
+                          style={[
+                            styles.mealItemRow,
+                            { borderTopColor: theme.border },
+                          ]}>
+                          <ThemedText type="small" style={styles.mealItemName}>
+                            {item.name}
+                          </ThemedText>
+                          {item.kcal !== undefined && (
+                            <ThemedText type="caption" themeColor="textMuted">
+                              {item.kcal} kcal
+                            </ThemedText>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </Card>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View>
@@ -435,6 +494,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
+  mealItems: { marginTop: Spacing.two },
+  mealItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.one + 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  mealItemName: { flex: 1 },
   shopProgress: { gap: Spacing.two, marginBottom: Spacing.three },
   track: {
     height: 8,

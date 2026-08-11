@@ -11,6 +11,7 @@ import { MeasurementsProvider } from '@/context/measurements-context';
 import { ProgramsProvider } from '@/context/programs-context';
 import { RoutineProvider } from '@/context/routine-context';
 import { ShoppingListProvider } from '@/context/shopping-list-context';
+import { MealProvider } from '@/context/meal-context';
 import { SupplementsProvider } from '@/context/supplements-context';
 import { WeightsProvider } from '@/context/weights-context';
 import { WellnessProvider } from '@/context/wellness-context';
@@ -75,6 +76,7 @@ export default function RootLayout() {
                   <DailyStepsProvider>
                     <ShoppingListProvider>
                       <MacrosProvider>
+                        <MealProvider>
                         <SupplementsProvider>
                           <RoutineProvider>
                             <WorkoutHistoryProvider>
@@ -82,6 +84,7 @@ export default function RootLayout() {
                             </WorkoutHistoryProvider>
                           </RoutineProvider>
                         </SupplementsProvider>
+                        </MealProvider>
                       </MacrosProvider>
                     </ShoppingListProvider>
                   </DailyStepsProvider>

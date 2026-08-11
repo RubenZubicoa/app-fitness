@@ -47,6 +47,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:web": "npx expo export --platform web",
+    "build:android": "npx expo export --platform android",
+    "build:ios": "npx expo export --platform ios",
     "deploy:web": "eas deploy"
   },
   "private": true
