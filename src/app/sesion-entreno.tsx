@@ -289,7 +289,7 @@ export default function SesionEntrenoScreen() {
       <View style={styles.list}>
         {session.exercises.map((ex, i) => (
           <ExerciseCard
-            key={ex.name}
+            key={ex.exerciseId ?? `${ex.name}-${i}`}
             exercise={ex}
             index={i + 1}
             draft={drafts[ex.name]}

@@ -8,6 +8,8 @@ export type RepRange = {
 };
 
 export type Exercise = {
+  /** Id del ejercicio en ExerciseMaster (cuando viene de la API hidratada). */
+  exerciseId?: string;
   name: string;
   /** Descripción de series, p. ej. "4 x 8-10" (fuerza) o "15 min" (cardio). */
   sets: string;
@@ -56,6 +58,10 @@ function normalizeExercise(raw: Record<string, unknown>): Exercise {
     rest: String(raw.rest ?? ''),
     type,
   };
+
+  if (raw.exerciseId !== undefined && raw.exerciseId !== null) {
+    exercise.exerciseId = normalizeId(raw.exerciseId);
+  }
 
   if (raw.seriesCount !== undefined && raw.seriesCount !== null && raw.seriesCount !== '') {
     exercise.seriesCount = Number(raw.seriesCount);

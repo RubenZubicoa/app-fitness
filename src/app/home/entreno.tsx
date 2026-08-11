@@ -137,15 +137,15 @@ export default function EntrenoScreen() {
                   </View>
                 </View>
                 <View style={styles.exercises}>
-                  {day.exercises.map((ex) => (
-                    <View key={ex.name} style={styles.exerciseRow}>
+                  {day.exercises.map((ex, exIndex) => (
+                    <View key={ex.exerciseId ?? `${ex.name}-${exIndex}`} style={styles.exerciseRow}>
                       <Ionicons
                         name={ex.type === 'cardio' ? 'heart' : 'ellipse'}
                         size={ex.type === 'cardio' ? 12 : 6}
                         color={theme.primary}
                       />
                       <ThemedText type="body" style={styles.exName}>
-                        {ex.name}
+                        {ex.name || 'Ejercicio'}
                       </ThemedText>
                       <ThemedText type="caption" themeColor="textMuted">
                         {ex.sets}
