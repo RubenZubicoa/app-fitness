@@ -4,17 +4,18 @@ import { normalizeId } from '@/types/program';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
-export type MealItem = {
+/** Comida completa alternativa que el cliente puede elegir. */
+export type MealOption = {
   name: string;
-  kcal?: number;
+  kcal: number;
+  description?: string;
 };
 
 export type MealSlot = {
   label: string;
   time: string;
   icon: IoniconName;
-  kcal: number;
-  items: MealItem[];
+  options: MealOption[];
 };
 
 export type Meal = {
@@ -29,23 +30,30 @@ function asIonicon(value: unknown): IoniconName {
   return 'restaurant-outline';
 }
 
-function normalizeMealItem(raw: unknown): MealItem {
+function normalizeMealOption(raw: unknown): MealOption {
   const item = (raw ?? {}) as Record<string, unknown>;
+  const description =
+    item.description !== undefined ? String(item.description) : undefined;
   return {
     name: String(item.name ?? ''),
-    ...(item.kcal !== undefined ? { kcal: Number(item.kcal) } : {}),
+    kcal: Number(item.kcal ?? 0),
+    ...(description ? { description } : {}),
   };
 }
 
 function normalizeMealSlot(raw: unknown): MealSlot {
   const slot = (raw ?? {}) as Record<string, unknown>;
-  const itemsRaw = Array.isArray(slot.items) ? slot.items : [];
+  // Compatibilidad con datos antiguos (`items`)
+  const optionsRaw = Array.isArray(slot.options)
+    ? slot.options
+    : Array.isArray(slot.items)
+      ? slot.items
+      : [];
   return {
     label: String(slot.label ?? ''),
     time: String(slot.time ?? ''),
     icon: asIonicon(slot.icon),
-    kcal: Number(slot.kcal ?? 0),
-    items: itemsRaw.map(normalizeMealItem),
+    options: optionsRaw.map(normalizeMealOption),
   };
 }
 

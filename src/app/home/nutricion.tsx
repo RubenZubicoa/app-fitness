@@ -194,6 +194,7 @@ export default function NutricionScreen() {
           <View style={styles.meals}>
             {meal.slots.map((slot) => {
               const isOpen = expandedSlot === slot.label;
+              const optionCount = slot.options.length;
               return (
                 <Card key={slot.label} style={styles.mealCard}>
                   <Pressable
@@ -208,11 +209,11 @@ export default function NutricionScreen() {
                     <View style={styles.mealBody}>
                       <View style={styles.mealTop}>
                         <ThemedText type="h3">{slot.label}</ThemedText>
-                        <Badge label={`${slot.kcal} kcal`} tone="gold" />
+                        <Badge
+                          label={`${optionCount} opción${optionCount !== 1 ? 'es' : ''}`}
+                          tone="gold"
+                        />
                       </View>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {slot.time} · {slot.items.length} alimento{slot.items.length !== 1 ? 's' : ''}
-                      </ThemedText>
                     </View>
                     <Ionicons
                       name={isOpen ? 'chevron-up' : 'chevron-down'}
@@ -222,21 +223,22 @@ export default function NutricionScreen() {
                   </Pressable>
                   {isOpen && (
                     <View style={styles.mealItems}>
-                      {slot.items.map((item, idx) => (
+                      {slot.options.map((option, idx) => (
                         <View
-                          key={`${item.name}-${idx}`}
+                          key={`${option.name}-${idx}`}
                           style={[
-                            styles.mealItemRow,
+                            styles.mealOptionRow,
                             { borderTopColor: theme.border },
                           ]}>
-                          <ThemedText type="small" style={styles.mealItemName}>
-                            {item.name}
-                          </ThemedText>
-                          {item.kcal !== undefined && (
-                            <ThemedText type="caption" themeColor="textMuted">
-                              {item.kcal} kcal
-                            </ThemedText>
-                          )}
+                          <View style={styles.mealOptionBody}>
+                            <ThemedText type="smallBold">{option.name}</ThemedText>
+                            {!!option.description && (
+                              <ThemedText type="caption" themeColor="textMuted">
+                                {option.description}
+                              </ThemedText>
+                            )}
+                          </View>
+                          <Badge label={`${option.kcal} kcal`} tone="gold" />
                         </View>
                       ))}
                     </View>
@@ -495,14 +497,14 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   mealItems: { marginTop: Spacing.two },
-  mealItemRow: {
+  mealOptionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.one + 2,
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  mealItemName: { flex: 1 },
+  mealOptionBody: { flex: 1, gap: 2 },
   shopProgress: { gap: Spacing.two, marginBottom: Spacing.three },
   track: {
     height: 8,
