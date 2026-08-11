@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
@@ -341,16 +341,25 @@ function ExerciseCard({
 }) {
   const theme = useTheme();
   const isCardio = exercise.type === 'cardio';
+  const [showExplanation, setShowExplanation] = useState(false);
 
   return (
     <Card style={styles.exerciseCard}>
       <View style={styles.exerciseHeader}>
-        <IconBadge
-          name={isCardio ? 'heart' : 'barbell'}
-          color={theme.primary}
-          background={theme.primarySoft}
-          size={42}
-        />
+        {exercise.imageUrl ? (
+          <Image
+            source={{ uri: exercise.imageUrl }}
+            style={styles.exerciseThumb}
+            accessibilityLabel={`Imagen de ${exercise.name}`}
+          />
+        ) : (
+          <IconBadge
+            name={isCardio ? 'heart' : 'barbell'}
+            color={theme.primary}
+            background={theme.primarySoft}
+            size={56}
+          />
+        )}
         <View style={styles.exerciseInfo}>
           <ThemedText type="h3">
             {index}. {exercise.name}
@@ -358,6 +367,17 @@ function ExerciseCard({
           <ThemedText type="small" themeColor="textSecondary">
             {isCardio ? 'Cardio' : `Objetivo ${exercise.sets}`} · Descanso {exercise.rest}
           </ThemedText>
+          {!!exercise.explanation && (
+            <Pressable
+              style={({ pressed }) => [styles.explainBtn, pressed && styles.pressed]}
+              onPress={() => setShowExplanation(true)}
+              hitSlop={6}>
+              <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
+              <ThemedText type="smallBold" themeColor="primary">
+                Ver explicación
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
         <Badge label={isCardio ? 'Cardio' : 'Fuerza'} tone={isCardio ? 'coral' : 'gold'} />
       </View>
@@ -375,6 +395,37 @@ function ExerciseCard({
           onChange={onChangeStrength}
         />
       )}
+
+      <Modal
+        visible={showExplanation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExplanation(false)}>
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowExplanation(false)} />
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            {exercise.imageUrl ? (
+              <Image
+                source={{ uri: exercise.imageUrl }}
+                style={styles.modalImage}
+                accessibilityLabel={`Imagen de ${exercise.name}`}
+              />
+            ) : null}
+            <ThemedText type="h2">{exercise.name}</ThemedText>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <ThemedText type="body" themeColor="textSecondary">
+                {exercise.explanation}
+              </ThemedText>
+            </ScrollView>
+            <Button
+              title="Cerrar"
+              variant="ghost"
+              icon="close"
+              onPress={() => setShowExplanation(false)}
+            />
+          </View>
+        </View>
+      </Modal>
     </Card>
   );
 }
@@ -563,10 +614,43 @@ const styles = StyleSheet.create({
   exerciseCard: { gap: Spacing.three },
   exerciseHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.two,
   },
+  exerciseThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.md,
+    backgroundColor: '#E4E9F1',
+  },
   exerciseInfo: { flex: 1, gap: 2 },
+  explainBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  pressed: { opacity: 0.75 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(10, 27, 51, 0.55)',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  modalCard: {
+    borderRadius: Radius.lg,
+    padding: Spacing.four,
+    gap: Spacing.three,
+    maxHeight: '80%',
+  },
+  modalImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: Radius.md,
+    backgroundColor: '#E4E9F1',
+  },
+  modalScroll: { maxHeight: 220 },
   saveError: { marginBottom: Spacing.two },
   setTable: { gap: Spacing.two },
   setHeaderRow: {

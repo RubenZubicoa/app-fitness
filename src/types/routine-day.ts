@@ -21,6 +21,10 @@ export type Exercise = {
   repUnit?: 'reps' | 's';
   /** Objetivos de cardio. */
   targetKm?: number;
+  /** URL de imagen ilustrativa del ejercicio. */
+  imageUrl?: string;
+  /** Explicación técnica de ejecución. */
+  explanation?: string;
 };
 
 export type RoutineDay = {
@@ -71,6 +75,18 @@ function normalizeExercise(raw: Record<string, unknown>): Exercise {
 
   if (raw.targetKm !== undefined && raw.targetKm !== null && raw.targetKm !== '') {
     exercise.targetKm = Number(raw.targetKm);
+  }
+
+  if (raw.imageUrl !== undefined && raw.imageUrl !== null && String(raw.imageUrl).trim()) {
+    exercise.imageUrl = String(raw.imageUrl).trim();
+  }
+
+  if (
+    raw.explanation !== undefined &&
+    raw.explanation !== null &&
+    String(raw.explanation).trim()
+  ) {
+    exercise.explanation = String(raw.explanation).trim();
   }
 
   return exercise;
