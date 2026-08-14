@@ -76,7 +76,7 @@ export async function fetchStepsRanking(period: 'week' | 'month'): Promise<Steps
 /** Actualiza registro de pasos: PUT /api/daily-steps/:id */
 export async function updateDailySteps(
   id: string,
-  payload: { days?: DaySteps[]; goal?: number; week?: number },
+  payload: { days?: DaySteps[]; goal?: number; week?: number; shareInCommunity?: boolean },
 ): Promise<DailySteps> {
   const raw = await request<Record<string, unknown>>(
     `/api/daily-steps/${encodeURIComponent(id)}`,

@@ -21,10 +21,10 @@ import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
+import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggle';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useRoutine } from '@/context/routine-context';
-import { useSocialFeed } from '@/context/social-feed-context';
 import { useWorkoutHistory } from '@/context/workout-history-context';
 import { useTheme } from '@/hooks/use-theme';
 import { formatRepRange, type Exercise } from '@/types/routine-day';
@@ -142,7 +142,6 @@ export default function SesionEntrenoScreen() {
   const { client } = useClient();
   const { routine, loading, error } = useRoutine();
   const { createWorkout, saving } = useWorkoutHistory();
-  const { publishWorkout } = useSocialFeed();
   const session = routine[dayIndex] ?? routine[0];
 
   const [started, setStarted] = useState(false);
@@ -150,6 +149,7 @@ export default function SesionEntrenoScreen() {
   const [seconds, setSeconds] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, ExerciseDraft>>({});
   const [media, setMedia] = useState<WorkoutMedia[]>([]);
+  const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionId = session?._id ?? '';
@@ -268,7 +268,7 @@ export default function SesionEntrenoScreen() {
     const exercises = draftsToExerciseLogs(session.exercises, drafts);
 
     try {
-      const created = await createWorkout({
+      await createWorkout({
         week: client.week,
         date: formatSessionDate(),
         day: session.day,
@@ -277,10 +277,7 @@ export default function SesionEntrenoScreen() {
         durationMinutes,
         exercises,
         ...(media.length > 0 ? { media } : {}),
-      });
-      publishWorkout({
-        ...created,
-        ...(media.length > 0 ? { media } : {}),
+        shareInCommunity,
       });
       router.back();
     } catch (err) {
@@ -431,6 +428,12 @@ export default function SesionEntrenoScreen() {
           {saveError}
         </ThemedText>
       ) : null}
+
+      <ShareInCommunityToggle
+        value={shareInCommunity}
+        onChange={setShareInCommunity}
+        disabled={saving}
+      />
 
       <Button
         title={saving ? 'Guardando…' : 'Finalizar y guardar sesión'}

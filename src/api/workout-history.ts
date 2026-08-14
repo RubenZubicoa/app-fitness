@@ -75,6 +75,7 @@ export type CreateWorkoutHistoryPayload = {
   durationMinutes: number;
   exercises: ExerciseLog[];
   media?: WorkoutMedia[];
+  shareInCommunity?: boolean;
 };
 
 /** Crea sesión: POST /api/workout-history */

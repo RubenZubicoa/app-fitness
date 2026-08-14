@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
+import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggle';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
@@ -65,6 +66,7 @@ export default function AnadirRegistroScreen() {
   const [photos, setPhotos] = useState<PhotoSlot[]>(
     PHOTO_SLOTS.map((slot) => ({ ...slot, uri: null })),
   );
+  const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
@@ -163,6 +165,7 @@ export default function AnadirRegistroScreen() {
           value: weightNum,
           date,
           existing: weight,
+          shareInCommunity,
         });
         await refreshWeight();
       }
@@ -181,6 +184,7 @@ export default function AnadirRegistroScreen() {
           value,
           delta,
           date,
+          shareInCommunity,
         });
       }
       await refreshMeasurements();
@@ -196,6 +200,7 @@ export default function AnadirRegistroScreen() {
           wellnessId: master._id,
           value,
           date,
+          shareInCommunity,
         });
       }
       await refreshWellness();
@@ -384,6 +389,12 @@ export default function AnadirRegistroScreen() {
           {error}
         </ThemedText>
       ) : null}
+
+      <ShareInCommunityToggle
+        value={shareInCommunity}
+        onChange={setShareInCommunity}
+        disabled={saving}
+      />
 
       <Button
         title={saving ? 'Guardando…' : 'Guardar registro'}

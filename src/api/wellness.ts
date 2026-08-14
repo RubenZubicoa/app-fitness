@@ -73,6 +73,7 @@ export type CreateWellnessPayload = {
   wellnessId: string;
   value: number;
   date: string;
+  shareInCommunity?: boolean;
 };
 
 /** Crea sensación: POST /api/wellness */

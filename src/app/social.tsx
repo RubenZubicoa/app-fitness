@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 import { fetchStepsRanking } from '@/api/daily-steps';
 import { ThemedText } from '@/components/themed-text';
@@ -111,7 +112,7 @@ function WorkoutMediaRow({ media }: { media: WorkoutMedia[] }) {
 export default function SocialScreen() {
   const theme = useTheme();
   const { client } = useClient();
-  const { feed } = useSocialFeed();
+  const { feed, loading: feedLoading, error: feedError, refreshFeed } = useSocialFeed();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [stepsPeriod, setStepsPeriod] = useState<StepsRankingPeriod>('week');
@@ -136,6 +137,12 @@ export default function SocialScreen() {
   useEffect(() => {
     void loadStepsRanking(stepsPeriod);
   }, [loadStepsRanking, stepsPeriod]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshFeed();
+    }, [refreshFeed]),
+  );
 
   const stepsLeader = stepsRanking[0]?.steps ?? 1;
 
@@ -308,7 +315,25 @@ export default function SocialScreen() {
       </ScrollView>
 
       <View style={styles.feed}>
-        {posts.length === 0 ? (
+        {feedLoading ? (
+          <Card style={styles.stepsLoading}>
+            <ActivityIndicator color={theme.primary} />
+            <ThemedText type="small" themeColor="textSecondary">
+              Cargando feed…
+            </ThemedText>
+          </Card>
+        ) : feedError ? (
+          <Card>
+            <ThemedText type="body" themeColor="textSecondary">
+              {feedError}
+            </ThemedText>
+            <Pressable onPress={() => void refreshFeed()}>
+              <ThemedText type="link" themeColor="primary">
+                Reintentar
+              </ThemedText>
+            </Pressable>
+          </Card>
+        ) : posts.length === 0 ? (
           <Card>
             <ThemedText type="body" themeColor="textSecondary">
               No hay logros en esta categoría todavía.

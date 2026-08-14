@@ -87,7 +87,9 @@ export type CreateWeightPayload = {
 };
 
 /** Crea serie de peso: POST /api/weights */
-export async function createWeight(payload: CreateWeightPayload): Promise<Weight> {
+export async function createWeight(
+  payload: CreateWeightPayload & { shareInCommunity?: boolean },
+): Promise<Weight> {
   const raw = await request<Record<string, unknown>>('/api/weights', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -98,7 +100,10 @@ export async function createWeight(payload: CreateWeightPayload): Promise<Weight
 /** Actualiza serie de peso: PUT /api/weights/:id */
 export async function updateWeight(
   id: string,
-  payload: Partial<Omit<CreateWeightPayload, 'clientId'>> & { clientId?: string },
+  payload: Partial<Omit<CreateWeightPayload, 'clientId'>> & {
+    clientId?: string;
+    shareInCommunity?: boolean;
+  },
 ): Promise<Weight> {
   const raw = await request<Record<string, unknown>>(
     `/api/weights/${encodeURIComponent(id)}`,
@@ -118,8 +123,9 @@ export async function appendWeightEntry(input: {
   existing: Weight | null;
   target?: number;
   unit?: string;
+  shareInCommunity?: boolean;
 }): Promise<Weight> {
-  const { clientId, value, date, existing } = input;
+  const { clientId, value, date, existing, shareInCommunity } = input;
   const unit = input.unit ?? existing?.unit ?? 'kg';
   const target = input.target ?? existing?.target ?? value;
 
@@ -132,6 +138,7 @@ export async function appendWeightEntry(input: {
       current: value,
       target,
       unit,
+      shareInCommunity,
     });
   }
 
@@ -150,6 +157,7 @@ export async function appendWeightEntry(input: {
       labels: nextLabels,
       data: nextData,
       current: value,
+      shareInCommunity,
     });
   }
 
@@ -157,5 +165,6 @@ export async function appendWeightEntry(input: {
     labels: [...labels, date],
     data: [...data, value],
     current: value,
+    shareInCommunity,
   });
 }

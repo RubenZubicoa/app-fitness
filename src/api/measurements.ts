@@ -74,6 +74,7 @@ export type CreateMeasurementPayload = {
   value: number;
   delta: number;
   date: string;
+  shareInCommunity?: boolean;
 };
 
 /** Crea medida: POST /api/measurements */

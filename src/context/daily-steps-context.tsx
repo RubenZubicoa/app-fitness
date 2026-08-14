@@ -29,7 +29,7 @@ type DailyStepsContextValue = {
   error: string | null;
   refreshDailySteps: () => Promise<void>;
   /** Guarda los pasos del día actual (índice L–D) en la BD. */
-  saveTodaySteps: (steps: number) => Promise<void>;
+  saveTodaySteps: (steps: number, shareInCommunity?: boolean) => Promise<void>;
 };
 
 const DailyStepsContext = createContext<DailyStepsContextValue | undefined>(undefined);
@@ -71,7 +71,7 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   );
 
   const saveTodaySteps = useCallback(
-    async (steps: number) => {
+    async (steps: number, shareInCommunity = false) => {
       if (!current) {
         throw new Error('No hay registro de pasos para esta semana');
       }
@@ -87,7 +87,10 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       setSaving(true);
       setError(null);
       try {
-        const updated = await updateDailyStepsApi(current._id, { days: nextDays });
+        const updated = await updateDailyStepsApi(current._id, {
+          days: nextDays,
+          shareInCommunity,
+        });
         setRecords((prev) =>
           prev.map((record) => (record._id === updated._id ? updated : record)),
         );

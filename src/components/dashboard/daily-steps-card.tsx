@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
+import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggle';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useDailySteps } from '@/context/daily-steps-context';
@@ -26,6 +27,7 @@ export function DailyStepsCard() {
 
   const [weekValues, setWeekValues] = useState<number[]>([]);
   const [input, setInput] = useState('');
+  const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export function DailyStepsCard() {
 
     setSaveError(null);
     try {
-      await saveTodaySteps(parsed);
+      await saveTodaySteps(parsed, shareInCommunity);
       setWeekValues((prev) => {
         const next = [...prev];
         next[todayIndex] = parsed;
@@ -177,6 +179,12 @@ export function DailyStepsCard() {
           {saveError}
         </ThemedText>
       ) : null}
+
+      <ShareInCommunityToggle
+        value={shareInCommunity}
+        onChange={setShareInCommunity}
+        disabled={saving}
+      />
 
       <View style={styles.chartHeader}>
         <ThemedText type="label" themeColor="textMuted">
