@@ -243,44 +243,6 @@ export const socialFeed: SocialFeedEntry[] = [
   },
 ];
 
-export const leaderboard = [
-  {
-    clientId: 'c-ana',
-    fullName: 'Ana G.',
-    points: 980,
-    avatar: 'https://i.pravatar.cc/100?img=32',
-    streak: 12,
-  },
-  {
-    clientId: 'c-lucia',
-    fullName: 'Lucía F.',
-    points: 910,
-    avatar: 'https://i.pravatar.cc/100?img=47',
-    streak: 9,
-  },
-  {
-    clientId: 'c-marcos',
-    fullName: 'Marcos R.',
-    points: 870,
-    avatar: 'https://i.pravatar.cc/100?img=12',
-    streak: 7,
-  },
-  {
-    clientId: 'c-sofia',
-    fullName: 'Sofía P.',
-    points: 820,
-    avatar: 'https://i.pravatar.cc/100?img=5',
-    streak: 5,
-  },
-  {
-    clientId: 'c-carlos',
-    fullName: 'Carlos M.',
-    points: 760,
-    avatar: 'https://i.pravatar.cc/100?img=15',
-    streak: 4,
-  },
-];
-
 export const communityHighlights = [
   {
     label: 'Miembros activos',

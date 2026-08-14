@@ -4,6 +4,10 @@ import {
   type DailySteps,
   type DaySteps,
 } from '@/types/daily-steps';
+import {
+  normalizeStepsRankingEntry,
+  type StepsRankingEntry,
+} from '@/types/steps-ranking';
 
 type ApiErrorBody = { message?: string };
 
@@ -58,6 +62,15 @@ export async function fetchClientDailySteps(clientId: string): Promise<DailyStep
   const raw = await request<unknown[]>(`/api/daily-steps/${encodeURIComponent(clientId)}`);
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => normalizeDailySteps(item as Record<string, unknown>));
+}
+
+/** Ranking comunitario de pasos: GET /api/daily-steps/ranking?period=week|month */
+export async function fetchStepsRanking(period: 'week' | 'month'): Promise<StepsRankingEntry[]> {
+  const raw = await request<unknown[]>(
+    `/api/daily-steps/ranking?period=${encodeURIComponent(period)}`,
+  );
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => normalizeStepsRankingEntry(item as Record<string, unknown>));
 }
 
 /** Actualiza registro de pasos: PUT /api/daily-steps/:id */

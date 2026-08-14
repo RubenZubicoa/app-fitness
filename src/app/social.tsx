@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { fetchStepsRanking } from '@/api/daily-steps';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -10,13 +11,19 @@ import { GradientHeader } from '@/components/ui/gradient-header';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
+import { Segmented } from '@/components/ui/segmented';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import {
   communityHighlights,
-  leaderboard,
 } from '@/data/mock';
+import { useClient } from '@/context/client-context';
 import { useSocialFeed } from '@/context/social-feed-context';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  formatStepsCount,
+  type StepsRankingEntry,
+  type StepsRankingPeriod,
+} from '@/types/steps-ranking';
 import {
   formatRelativeTime,
   socialFeedAction,
@@ -103,9 +110,34 @@ function WorkoutMediaRow({ media }: { media: WorkoutMedia[] }) {
 
 export default function SocialScreen() {
   const theme = useTheme();
+  const { client } = useClient();
   const { feed } = useSocialFeed();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [stepsPeriod, setStepsPeriod] = useState<StepsRankingPeriod>('week');
+  const [stepsRanking, setStepsRanking] = useState<StepsRankingEntry[]>([]);
+  const [stepsLoading, setStepsLoading] = useState(true);
+  const [stepsError, setStepsError] = useState<string | null>(null);
+
+  const loadStepsRanking = useCallback(async (period: StepsRankingPeriod) => {
+    setStepsLoading(true);
+    setStepsError(null);
+    try {
+      const ranking = await fetchStepsRanking(period);
+      setStepsRanking(ranking);
+    } catch (err) {
+      setStepsError(err instanceof Error ? err.message : 'No se pudo cargar el ranking');
+      setStepsRanking([]);
+    } finally {
+      setStepsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadStepsRanking(stepsPeriod);
+  }, [loadStepsRanking, stepsPeriod]);
+
+  const stepsLeader = stepsRanking[0]?.steps ?? 1;
 
   const posts = useMemo(
     () => (filter === 'all' ? feed : feed.filter((p) => p.kind === filter)),
@@ -156,6 +188,95 @@ export default function SocialScreen() {
           </View>
           <Badge label="Unirme" tone="gold" solid />
         </View>
+      </Card>
+
+      <SectionHeader title="Ranking de pasos" />
+      <Segmented
+        options={[
+          { key: 'week', label: 'Esta semana' },
+          { key: 'month', label: 'Este mes' },
+        ]}
+        value={stepsPeriod}
+        onChange={setStepsPeriod}
+      />
+      <Card style={styles.stepsRankingCard}>
+        {stepsLoading ? (
+          <View style={styles.stepsLoading}>
+            <ActivityIndicator color={theme.primary} />
+            <ThemedText type="small" themeColor="textSecondary">
+              Cargando ranking…
+            </ThemedText>
+          </View>
+        ) : stepsError ? (
+          <View style={styles.stepsLoading}>
+            <ThemedText type="body" themeColor="textSecondary">
+              {stepsError}
+            </ThemedText>
+            <Pressable onPress={() => void loadStepsRanking(stepsPeriod)}>
+              <ThemedText type="link" themeColor="primary">
+                Reintentar
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : stepsRanking.length === 0 ? (
+          <ThemedText type="body" themeColor="textSecondary">
+            Aún no hay pasos registrados en este periodo.
+          </ThemedText>
+        ) : (
+          stepsRanking.map((entry, index) => {
+          const isCurrentUser = client?._id === entry.clientId;
+          const progress = entry.steps / stepsLeader;
+
+          return (
+            <View
+              key={entry.clientId}
+              style={[
+                styles.rankRow,
+                isCurrentUser && { backgroundColor: theme.primarySoft, borderRadius: Radius.md },
+                index < stepsRanking.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: theme.border,
+                },
+              ]}>
+              <ThemedText
+                type="h3"
+                themeColor={index === 0 ? 'gold' : index === 1 ? 'textSecondary' : 'textMuted'}
+                style={styles.rank}>
+                #{index + 1}
+              </ThemedText>
+              <Image source={{ uri: entry.avatar }} style={styles.rankAvatar} contentFit="cover" />
+              <View style={styles.rankInfo}>
+                <View style={styles.stepsNameRow}>
+                  <ThemedText type="body">{entry.fullName}</ThemedText>
+                  {isCurrentUser ? <Badge label="Tú" tone="primary" /> : null}
+                </View>
+                {entry.avgDaily != null ? (
+                  <ThemedText type="caption" themeColor="textMuted">
+                    ~{formatStepsCount(entry.avgDaily)} pasos/día
+                  </ThemedText>
+                ) : null}
+                <View style={[styles.stepsBarTrack, { backgroundColor: theme.backgroundElement }]}>
+                  <View
+                    style={[
+                      styles.stepsBarFill,
+                      {
+                        width: `${Math.round(progress * 100)}%`,
+                        backgroundColor: index === 0 ? theme.gold : theme.teal,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+              <View style={styles.stepsValue}>
+                <Ionicons name="footsteps" size={16} color={theme.teal} />
+                <ThemedText type="smallBold" themeColor="primary">
+                  {formatStepsCount(entry.steps)}
+                </ThemedText>
+              </View>
+            </View>
+          );
+        })
+        )}
       </Card>
 
       <SectionHeader title="Feed de logros" />
@@ -294,38 +415,6 @@ export default function SocialScreen() {
           })
         )}
       </View>
-
-      <SectionHeader title="Ranking semanal" />
-      <Card>
-        {leaderboard.map((entry, index) => (
-          <View
-            key={entry.clientId}
-            style={[
-              styles.rankRow,
-              index < leaderboard.length - 1 && {
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: theme.border,
-              },
-            ]}>
-            <ThemedText
-              type="h3"
-              themeColor={index === 0 ? 'gold' : 'textMuted'}
-              style={styles.rank}>
-              #{index + 1}
-            </ThemedText>
-            <Image source={{ uri: entry.avatar }} style={styles.rankAvatar} contentFit="cover" />
-            <View style={styles.rankInfo}>
-              <ThemedText type="body">{entry.fullName}</ThemedText>
-              <ThemedText type="caption" themeColor="textMuted">
-                Racha {entry.streak} días
-              </ThemedText>
-            </View>
-            <ThemedText type="smallBold" themeColor="primary">
-              {entry.points} pts
-            </ThemedText>
-          </View>
-        ))}
-      </Card>
     </Screen>
   );
 }
@@ -428,6 +517,33 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: Radius.pill,
   },
-  rankInfo: { flex: 1, gap: 1 },
+  rankInfo: { flex: 1, gap: 4 },
+  stepsRankingCard: { marginTop: Spacing.two },
+  stepsLoading: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+  },
+  stepsNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
+  },
+  stepsBarTrack: {
+    height: 4,
+    borderRadius: Radius.pill,
+    overflow: 'hidden',
+    marginTop: 2,
+  },
+  stepsBarFill: {
+    height: '100%',
+    borderRadius: Radius.pill,
+  },
+  stepsValue: {
+    alignItems: 'flex-end',
+    gap: 2,
+    minWidth: 72,
+  },
   pressed: { opacity: 0.7 },
 });
