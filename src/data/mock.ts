@@ -9,30 +9,6 @@ import type { SocialFeedEntry } from '@/types/social-feed';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const reviews = [
-  {
-    clientId: '6a620e6c10d4cdecdb7c6817',
-    title: 'Revisión semanal · Semana 7',
-    date: 'Vie 23 may · 17:00',
-    status: 'upcoming' as const,
-    note: 'Sube 4 fotos y tus medidas 24h antes.',
-  },
-  {
-    clientId: '6a620e6c10d4cdecdb7c6817',
-    title: 'Revisión semanal · Semana 6',
-    date: 'Vie 16 may · 17:00',
-    status: 'done' as const,
-    note: 'Completada. ¡Gran progreso en cintura!',
-  },
-  {
-    clientId: '6a620e6c10d4cdecdb7c6817',
-    title: 'Revisión semanal · Semana 5',
-    date: 'Vie 9 may · 17:00',
-    status: 'done' as const,
-    note: 'Completada.',
-  },
-];
-
 export const videoLibrary = [
   {
     category: 'Nutrición',
