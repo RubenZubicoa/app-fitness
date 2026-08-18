@@ -15,26 +15,25 @@ import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggl
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
+import { useProgressImages } from '@/context/progress-images-context';
 import { useWeights } from '@/context/weights-context';
 import { useWellness } from '@/context/wellness-context';
 import { appendWeightEntry } from '@/api/weights';
 import { createMeasurement } from '@/api/measurements';
 import { createWellness } from '@/api/wellness';
+import { uploadProgressImage } from '@/api/progress-images';
 import { useTheme } from '@/hooks/use-theme';
 import { getLatestWeightValue } from '@/types/weight';
 import { latestMeasurementsByType } from '@/types/measurement';
 
-type PhotoSlot = {
-  key: 'front' | 'side' | 'back';
-  label: string;
-  uri: string | null;
+type ProgressPhoto = {
+  id: string;
+  uri: string;
 };
 
-const PHOTO_SLOTS: Omit<PhotoSlot, 'uri'>[] = [
-  { key: 'front', label: 'Frente' },
-  { key: 'side', label: 'Lado' },
-  { key: 'back', label: 'Espalda' },
-];
+function newPhotoId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -54,6 +53,7 @@ export default function AnadirRegistroScreen() {
   const { weight, refreshWeight } = useWeights();
   const { masters: measurementMasters, measurements, refreshMeasurements } = useMeasurements();
   const { masters: wellnessMasters, refreshWellness } = useWellness();
+  const { refreshProgressImages } = useProgressImages();
 
   const latestByMeasure = useMemo(
     () => latestMeasurementsByType(measurements),
@@ -63,9 +63,7 @@ export default function AnadirRegistroScreen() {
   const [weightValue, setWeightValue] = useState('');
   const [measureValues, setMeasureValues] = useState<Record<string, string>>({});
   const [wellnessValues, setWellnessValues] = useState<Record<string, string>>({});
-  const [photos, setPhotos] = useState<PhotoSlot[]>(
-    PHOTO_SLOTS.map((slot) => ({ ...slot, uri: null })),
-  );
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +113,7 @@ export default function AnadirRegistroScreen() {
     setWellnessValues((prev) => ({ ...prev, [id]: value }));
   };
 
-  const pickPhoto = async (key: PhotoSlot['key']) => {
+  const pickPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       const message = 'Necesitamos permiso para acceder a tu galería.';
@@ -130,21 +128,21 @@ export default function AnadirRegistroScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
-      allowsEditing: true,
-      aspect: [3, 4],
+      allowsMultipleSelection: true,
+      selectionLimit: 0,
     });
 
-    if (result.canceled || !result.assets[0]?.uri) return;
+    if (result.canceled || result.assets.length === 0) return;
 
-    setPhotos((prev) =>
-      prev.map((slot) => (slot.key === key ? { ...slot, uri: result.assets[0].uri } : slot)),
-    );
+    const newPhotos = result.assets
+      .filter((asset) => asset.uri)
+      .map((asset) => ({ id: newPhotoId(), uri: asset.uri! }));
+
+    setPhotos((prev) => [...prev, ...newPhotos]);
   };
 
-  const clearPhoto = (key: PhotoSlot['key']) => {
-    setPhotos((prev) =>
-      prev.map((slot) => (slot.key === key ? { ...slot, uri: null } : slot)),
-    );
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
   };
 
   const handleSave = async () => {
@@ -205,13 +203,17 @@ export default function AnadirRegistroScreen() {
       }
       await refreshWellness();
 
-      const selectedPhotos = photos.filter((p) => p.uri);
-      if (selectedPhotos.length > 0) {
-        // Las fotos quedan seleccionadas en el formulario; aún no hay endpoint de persistencia.
-        console.info(
-          'Fotos de progreso seleccionadas (pendiente de API):',
-          selectedPhotos.map((p) => p.key),
+      if (photos.length > 0) {
+        await Promise.all(
+          photos.map((photo, index) =>
+            uploadProgressImage(
+              client._id,
+              photo.uri,
+              `progress-${Date.now()}-${index}.jpg`,
+            ),
+          ),
         );
+        await refreshProgressImages();
       }
 
       router.back();
@@ -344,43 +346,38 @@ export default function AnadirRegistroScreen() {
         <SectionHeader title="Fotos de progreso" />
         <Card style={styles.sectionCard}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-            Añade frente, lado y espalda. Se guardarán cuando el API de fotos esté disponible.
+            Añade tantas fotos como quieras. Se subirán al guardar el registro.
           </ThemedText>
-          <View style={styles.photoRow}>
-            {photos.map((slot) => (
-              <View key={slot.key} style={styles.photoSlot}>
-                <Pressable
-                  style={[
-                    styles.photoBox,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    void pickPhoto(slot.key);
-                  }}>
-                  {slot.uri ? (
-                    <Image source={{ uri: slot.uri }} style={styles.photoImage} contentFit="cover" />
-                  ) : (
-                    <View style={styles.photoEmpty}>
-                      <Ionicons name="camera-outline" size={22} color={theme.primary} />
-                      <ThemedText type="caption" themeColor="textMuted">
-                        {slot.label}
-                      </ThemedText>
-                    </View>
-                  )}
-                </Pressable>
-                {slot.uri ? (
-                  <Pressable onPress={() => clearPhoto(slot.key)} hitSlop={8}>
-                    <ThemedText type="caption" themeColor="textSecondary">
-                      Quitar
-                    </ThemedText>
+
+          {photos.length > 0 ? (
+            <View style={styles.photoGrid}>
+              {photos.map((photo) => (
+                <View key={photo.id} style={styles.photoItem}>
+                  <Image
+                    source={{ uri: photo.uri }}
+                    style={styles.photoImage}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    style={[styles.removePhotoBtn, { backgroundColor: theme.coral }]}
+                    onPress={() => removePhoto(photo.id)}
+                    hitSlop={8}>
+                    <Ionicons name="close" size={14} color="#FFFFFF" />
                   </Pressable>
-                ) : null}
-              </View>
-            ))}
-          </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <Button
+            title={photos.length > 0 ? 'Añadir más fotos' : 'Añadir fotos'}
+            icon="images-outline"
+            variant="secondary"
+            onPress={() => {
+              void pickPhotos();
+            }}
+            disabled={saving}
+          />
         </Card>
       </View>
 
@@ -433,28 +430,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
   },
-  photoRow: {
+  photoGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  photoSlot: {
-    flex: 1,
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  photoBox: {
-    width: '100%',
+  photoItem: {
+    width: '30%',
     aspectRatio: 3 / 4,
     borderRadius: Radius.md,
-    borderWidth: 1,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  removePhotoBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  photoEmpty: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    padding: Spacing.two,
   },
   photoImage: {
     width: '100%',

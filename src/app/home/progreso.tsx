@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -17,11 +16,13 @@ import { Segmented } from '@/components/ui/segmented';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMeasurements } from '@/context/measurements-context';
+import { useProgressImages } from '@/context/progress-images-context';
 import { useWeights } from '@/context/weights-context';
 import { useWellness } from '@/context/wellness-context';
-import { formatChartDate } from '@/types/measurement';
-import { getLatestWeightValue } from '@/types/weight';
 import { useTheme } from '@/hooks/use-theme';
+import { formatChartDate } from '@/types/measurement';
+import { formatProgressImageDate } from '@/types/progress-image';
+import { getLatestWeightValue } from '@/types/weight';
 
 function formatMeasureDate(isoDate: string): string {
   const date = new Date(`${isoDate}T12:00:00`);
@@ -58,6 +59,11 @@ export default function ProgresoScreen() {
   const { enrichedLatest, seriesByMasterId, loading, error } = useMeasurements();
   const { weight, loading: weightLoading, error: weightError } = useWeights();
   const { enriched: wellnessItems, loading: wellnessLoading, error: wellnessError } = useWellness();
+  const {
+    images: progressImages,
+    loading: imagesLoading,
+    error: imagesError,
+  } = useProgressImages();
 
   const measureOptions = useMemo(
     () => enrichedLatest.map((m) => ({ key: m.MeasurementId, label: m.label })),
@@ -251,22 +257,35 @@ export default function ProgresoScreen() {
 
       <View>
         <SectionHeader title="Fotos de progreso" actionLabel="Ver todas" />
-        <View style={styles.photoRow}>
-          <PhotoCard label="Inicio" date="14 abr" image="https://picsum.photos/seed/regenesis1/300/400" />
-          <PhotoCard label="Semana 3" date="5 may" image="https://picsum.photos/seed/regenesis2/300/400" />
-          <PhotoCard
-            label="Semana 6"
-            date="26 may"
-            highlight
-            image="https://picsum.photos/seed/regenesis3/300/400"
-          />
-        </View>
-        <Button
-          title="Subir nuevas fotos"
-          icon="camera-outline"
-          variant="secondary"
-          onPress={() => router.push('/anadir-registro' as Href)}
-        />
+        {imagesLoading ? (
+          <Card style={styles.photosCard}>
+            <ActivityIndicator color={theme.gold} />
+          </Card>
+        ) : imagesError ? (
+          <Card style={styles.photosCard}>
+            <ThemedText type="body" themeColor="textSecondary">
+              {imagesError}
+            </ThemedText>
+          </Card>
+        ) : progressImages.length === 0 ? (
+          <Card style={styles.photosCard}>
+            <ThemedText type="body" themeColor="textSecondary">
+              Aún no hay fotos de progreso.
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.photoRow}>
+            {progressImages.slice(0, 3).map((img, index) => (
+              <PhotoCard
+                key={img._id}
+                label={index === 0 ? 'Inicio' : `Sem. ${index}`}
+                date={formatProgressImageDate(img.createdAt)}
+                image={img.image}
+                highlight={index === progressImages.slice(0, 3).length - 1}
+              />
+            ))}
+          </View>
+        )}
       </View>
 
       <View>
@@ -376,6 +395,12 @@ const styles = StyleSheet.create({
   photoRow: {
     flexDirection: 'row',
     gap: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  photosCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
     marginBottom: Spacing.three,
   },
   photoWrap: {

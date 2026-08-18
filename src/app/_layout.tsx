@@ -9,6 +9,7 @@ import { DailyStepsProvider } from '@/context/daily-steps-context';
 import { MacrosProvider } from '@/context/macros-context';
 import { MeasurementsProvider } from '@/context/measurements-context';
 import { ProgramsProvider } from '@/context/programs-context';
+import { ProgressImagesProvider } from '@/context/progress-images-context';
 import { RoutineProvider } from '@/context/routine-context';
 import { ShoppingListProvider } from '@/context/shopping-list-context';
 import { MealProvider } from '@/context/meal-context';
@@ -73,6 +74,7 @@ export default function RootLayout() {
           <ProgramsProvider>
             <MeasurementsProvider>
               <WeightsProvider>
+                <ProgressImagesProvider>
                 <WellnessProvider>
                   <DailyStepsProvider>
                     <ShoppingListProvider>
@@ -92,6 +94,7 @@ export default function RootLayout() {
                     </ShoppingListProvider>
                   </DailyStepsProvider>
                 </WellnessProvider>
+                </ProgressImagesProvider>
               </WeightsProvider>
             </MeasurementsProvider>
           </ProgramsProvider>
