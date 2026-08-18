@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useFocusEffect } from 'expo-router';
 
 import { fetchStepsRanking } from '@/api/daily-steps';
+import { fetchCommunityStats } from '@/api/social-feed';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -15,8 +16,9 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { Segmented } from '@/components/ui/segmented';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import {
-  communityHighlights,
-} from '@/data/mock';
+  communityStatsToHighlights,
+  type CommunityHighlight,
+} from '@/types/community-stats';
 import { useClient } from '@/context/client-context';
 import { useSocialFeed } from '@/context/social-feed-context';
 import { useTheme } from '@/hooks/use-theme';
@@ -116,9 +118,27 @@ export default function SocialScreen() {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [stepsPeriod, setStepsPeriod] = useState<StepsRankingPeriod>('week');
+  const [highlights, setHighlights] = useState<CommunityHighlight[]>(
+    communityStatsToHighlights({ activeMembers: 0, weeklyWorkouts: 0, weeklySteps: 0 }),
+  );
+  const [statsLoading, setStatsLoading] = useState(true);
   const [stepsRanking, setStepsRanking] = useState<StepsRankingEntry[]>([]);
   const [stepsLoading, setStepsLoading] = useState(true);
   const [stepsError, setStepsError] = useState<string | null>(null);
+
+  const loadCommunityStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const stats = await fetchCommunityStats();
+      setHighlights(communityStatsToHighlights(stats));
+    } catch {
+      setHighlights(
+        communityStatsToHighlights({ activeMembers: 0, weeklyWorkouts: 0, weeklySteps: 0 }),
+      );
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
 
   const loadStepsRanking = useCallback(async (period: StepsRankingPeriod) => {
     setStepsLoading(true);
@@ -135,13 +155,18 @@ export default function SocialScreen() {
   }, []);
 
   useEffect(() => {
+    void loadCommunityStats();
+  }, [loadCommunityStats]);
+
+  useEffect(() => {
     void loadStepsRanking(stepsPeriod);
   }, [loadStepsRanking, stepsPeriod]);
 
   useFocusEffect(
     useCallback(() => {
       void refreshFeed();
-    }, [refreshFeed]),
+      void loadCommunityStats();
+    }, [refreshFeed, loadCommunityStats]),
   );
 
   const stepsLeader = stepsRanking[0]?.steps ?? 1;
@@ -168,7 +193,7 @@ export default function SocialScreen() {
         />
       }>
       <View style={styles.highlights}>
-        {communityHighlights.map((item) => (
+        {highlights.map((item) => (
           <Card key={item.label} style={styles.highlightCard}>
             <IconBadge
               name={item.icon}
@@ -176,26 +201,13 @@ export default function SocialScreen() {
               background={theme.goldSoft}
               size={36}
             />
-            <ThemedText type="h3">{item.value}</ThemedText>
+            <ThemedText type="h3">{statsLoading ? '—' : item.value}</ThemedText>
             <ThemedText type="caption" themeColor="textMuted" style={styles.highlightLabel}>
               {item.label}
             </ThemedText>
           </Card>
         ))}
       </View>
-
-      <Card style={styles.challenge}>
-        <View style={styles.challengeRow}>
-          <IconBadge name="flame" color={theme.gold} background={theme.goldSoft} size={44} />
-          <View style={styles.challengeBody}>
-            <ThemedText type="h3">Reto de la semana</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              10.000 pasos diarios · 24 personas unidas · Quedan 3 días
-            </ThemedText>
-          </View>
-          <Badge label="Unirme" tone="gold" solid />
-        </View>
-      </Card>
 
       <SectionHeader title="Ranking de pasos" />
       <Segmented
@@ -457,13 +469,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   highlightLabel: { textAlign: 'center' },
-  challenge: { marginTop: Spacing.two },
-  challengeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  challengeBody: { flex: 1, gap: 4 },
   filters: {
     gap: Spacing.two,
     paddingBottom: Spacing.two,

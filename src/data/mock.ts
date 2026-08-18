@@ -11,18 +11,21 @@ type Ionicon = keyof typeof Ionicons.glyphMap;
 
 export const reviews = [
   {
+    clientId: '6a620e6c10d4cdecdb7c6817',
     title: 'Revisión semanal · Semana 7',
     date: 'Vie 23 may · 17:00',
     status: 'upcoming' as const,
     note: 'Sube 4 fotos y tus medidas 24h antes.',
   },
   {
+    clientId: '6a620e6c10d4cdecdb7c6817',
     title: 'Revisión semanal · Semana 6',
     date: 'Vie 16 may · 17:00',
     status: 'done' as const,
     note: 'Completada. ¡Gran progreso en cintura!',
   },
   {
+    clientId: '6a620e6c10d4cdecdb7c6817',
     title: 'Revisión semanal · Semana 5',
     date: 'Vie 9 may · 17:00',
     status: 'done' as const,
@@ -240,24 +243,6 @@ export const socialFeed: SocialFeedEntry[] = [
         value: 9,
       },
     ],
-  },
-];
-
-export const communityHighlights = [
-  {
-    label: 'Miembros activos',
-    value: '128',
-    icon: 'people-outline' as Ionicon,
-  },
-  {
-    label: 'Logros hoy',
-    value: '34',
-    icon: 'sparkles' as Ionicon,
-  },
-  {
-    label: 'Fotos nuevas',
-    value: '11',
-    icon: 'camera-outline' as Ionicon,
   },
 ];
 

@@ -53,3 +53,10 @@ export async function fetchClientById(id: string): Promise<Client> {
   const raw = await request<Record<string, unknown>>(`/api/clients/${id}`);
   return normalizeClient(raw);
 }
+
+/** Lista todos los clientes: GET /api/clients */
+export async function fetchAllClients(): Promise<Client[]> {
+  const raw = await request<unknown[]>('/api/clients');
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => normalizeClient(item as Record<string, unknown>));
+}
