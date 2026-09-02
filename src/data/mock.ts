@@ -9,14 +9,41 @@ import type { SocialFeedEntry } from '@/types/social-feed';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const videoLibrary = [
+export type VideoLibraryItem = {
+  title: string;
+  type: 'Vídeo' | 'PDF';
+  length: string;
+  phase: number;
+  url: string;
+};
+
+export type VideoLibraryCategory = {
+  category: string;
+  icon: Ionicon;
+  tone: 'gold' | 'primary' | 'purple';
+  items: VideoLibraryItem[];
+};
+
+export const videoLibrary: VideoLibraryCategory[] = [
   {
     category: 'Nutrición',
     icon: 'nutrition-outline',
     tone: 'gold',
     items: [
-      { title: 'Cómo montar tu plato', type: 'Vídeo', length: '8 min' },
-      { title: 'Guía de suplementación', type: 'PDF', length: '12 pág' },
+      {
+        title: 'Cómo montar tu plato',
+        type: 'Vídeo',
+        length: '8 min',
+        phase: 1,
+        url: 'https://www.youtube.com/watch?v=example-plato',
+      },
+      {
+        title: 'Guía de suplementación',
+        type: 'PDF',
+        length: '12 pág',
+        phase: 2,
+        url: 'https://onatzhealthcoach.com/wp-content/uploads/guia-suplementacion.pdf',
+      },
     ],
   },
   {
@@ -24,8 +51,20 @@ export const videoLibrary = [
     icon: 'barbell-outline',
     tone: 'primary',
     items: [
-      { title: 'Técnica de sentadilla', type: 'Vídeo', length: '6 min' },
-      { title: 'Calentamiento articular', type: 'Vídeo', length: '5 min' },
+      {
+        title: 'Técnica de sentadilla',
+        type: 'Vídeo',
+        length: '6 min',
+        phase: 2,
+        url: 'https://www.youtube.com/watch?v=example-sentadilla',
+      },
+      {
+        title: 'Calentamiento articular',
+        type: 'Vídeo',
+        length: '5 min',
+        phase: 1,
+        url: 'https://www.youtube.com/watch?v=example-calentamiento',
+      },
     ],
   },
   {
@@ -33,11 +72,23 @@ export const videoLibrary = [
     icon: 'moon-outline',
     tone: 'purple',
     items: [
-      { title: 'Higiene del sueño', type: 'Vídeo', length: '10 min' },
-      { title: 'Gestión del estrés', type: 'PDF', length: '6 pág' },
+      {
+        title: 'Higiene del sueño',
+        type: 'Vídeo',
+        length: '10 min',
+        phase: 1,
+        url: 'https://www.youtube.com/watch?v=example-sueno',
+      },
+      {
+        title: 'Gestión del estrés',
+        type: 'PDF',
+        length: '6 pág',
+        phase: 3,
+        url: 'https://onatzhealthcoach.com/wp-content/uploads/gestion-estres.pdf',
+      },
     ],
   },
-] as const;
+];
 
 /** Feed demo tipado como SocialFeedEntry (alineado con WorkoutHistory, Weight, Measurement…). */
 export const socialFeed: SocialFeedEntry[] = [
