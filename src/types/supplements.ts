@@ -9,6 +9,7 @@ export type SupplementElement = {
   dose: string;
   when: string;
   icon: IoniconName;
+  purchaseLink?: string;
 };
 
 export type Supplements = {
@@ -29,11 +30,17 @@ export function normalizeSupplements(raw: Record<string, unknown>): Supplements 
   const elementsRaw = Array.isArray(raw.elements) ? raw.elements : [];
   const elements: SupplementElement[] = elementsRaw.map((entry) => {
     const item = (entry ?? {}) as Record<string, unknown>;
+    const purchaseLink =
+      typeof item.purchaseLink === 'string' && item.purchaseLink.trim()
+        ? item.purchaseLink.trim()
+        : undefined;
+
     return {
       name: String(item.name ?? ''),
       dose: String(item.dose ?? ''),
       when: String(item.when ?? ''),
       icon: asIonicon(item.icon),
+      ...(purchaseLink ? { purchaseLink } : {}),
     };
   });
 

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import { useState, useCallback } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -19,6 +20,7 @@ import { useMeals } from '@/context/meal-context';
 import { useSupplements } from '@/context/supplements-context';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
+import type { SupplementElement } from '@/types/supplements';
 
 const toneMap = {
   primary: 'primary',
@@ -92,6 +94,45 @@ export default function NutricionScreen() {
     await addItem(newItem, newQty);
     setNewItem('');
     setNewQty('');
+  };
+
+  const openPurchaseLink = useCallback(async (url: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      await openBrowserAsync(url, {
+        presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+      });
+    } catch {
+      Alert.alert('Error', 'No se pudo abrir el enlace de compra.');
+    }
+  }, []);
+
+  const renderSupplementCard = (supplement: SupplementElement) => {
+    const card = (
+      <Card style={styles.supCard}>
+        <IconBadge name={supplement.icon} color={theme.primary} background={theme.primarySoft} />
+        <ThemedText type="smallBold">{supplement.name}</ThemedText>
+        <ThemedText type="caption" themeColor="textMuted">
+          {supplement.dose}
+        </ThemedText>
+        <Badge label={supplement.when} tone="primary" />
+      </Card>
+    );
+
+    if (!supplement.purchaseLink) {
+      return card;
+    }
+
+    return (
+      <Pressable
+        style={({ pressed }) => pressed && styles.pressed}
+        onPress={() => void openPurchaseLink(supplement.purchaseLink!)}>
+        {card}
+      </Pressable>
+    );
   };
 
   return (
@@ -421,14 +462,9 @@ export default function NutricionScreen() {
         ) : (
           <View style={styles.supplements}>
             {supplements.elements.map((s) => (
-              <Card key={s.name} style={styles.supCard}>
-                <IconBadge name={s.icon} color={theme.primary} background={theme.primarySoft} />
-                <ThemedText type="smallBold">{s.name}</ThemedText>
-                <ThemedText type="caption" themeColor="textMuted">
-                  {s.dose}
-                </ThemedText>
-                <Badge label={s.when} tone="primary" />
-              </Card>
+              <View key={s.name} style={styles.supCardWrap}>
+                {renderSupplementCard(s)}
+              </View>
             ))}
           </View>
         )}
@@ -575,9 +611,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.three,
   },
-  supCard: {
+  supCardWrap: {
     width: '47%',
     flexGrow: 1,
+  },
+  supCard: {
     alignItems: 'center',
     gap: Spacing.one,
   },
