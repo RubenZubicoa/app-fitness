@@ -92,7 +92,13 @@ export default function MasScreen() {
             <Badge label={`Semana ${client.week}/${client.totalWeeks}`} tone="primary" />
           </View>
         </View>
-        <Pressable style={[styles.settingsBtn, { backgroundColor: theme.backgroundElement }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.settingsBtn,
+            { backgroundColor: theme.backgroundElement },
+            pressed && styles.pressed,
+          ]}
+          onPress={() => router.push('/datos-personales')}>
           <Ionicons name="settings-outline" size={20} color={theme.textSecondary} />
         </Pressable>
       </Card>

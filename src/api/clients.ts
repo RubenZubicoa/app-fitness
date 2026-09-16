@@ -54,6 +54,29 @@ export async function fetchClientById(id: string): Promise<Client> {
   return normalizeClient(raw);
 }
 
+export type UpdateClientPayload = {
+  name?: string;
+  fullName?: string;
+  email?: string;
+  telefono?: string;
+  goal?: string;
+  avatar?: string;
+  contraseña?: string;
+  password?: string;
+};
+
+/** Actualiza datos del cliente: PUT /api/clients/:id */
+export async function updateClient(
+  id: string,
+  payload: UpdateClientPayload,
+): Promise<Client> {
+  const raw = await request<Record<string, unknown>>(`/api/clients/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return normalizeClient(raw);
+}
+
 /** Lista todos los clientes: GET /api/clients */
 export async function fetchAllClients(): Promise<Client[]> {
   const raw = await request<unknown[]>('/api/clients');

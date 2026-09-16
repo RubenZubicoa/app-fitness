@@ -56,8 +56,11 @@ function RootNavigator() {
         <Stack.Screen name="home" />
         <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="anadir-registro" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="gestionar-progreso" />
+        <Stack.Screen name="datos-personales" />
         <Stack.Screen name="historico-entreno" />
         <Stack.Screen name="historico-entreno-detalle" />
+        <Stack.Screen name="historico-pasos" />
         <Stack.Screen name="revisiones" />
         <Stack.Screen name="videoteca" />
         <Stack.Screen name="social" />

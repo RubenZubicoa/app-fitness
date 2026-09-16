@@ -50,3 +50,29 @@ export function pickCurrentDailySteps(
   }
   return [...records].sort((a, b) => b.week - a.week)[0] ?? null;
 }
+
+/** Registros ordenados por semana ascendente. */
+export function sortDailyStepsByWeek(records: DailySteps[]): DailySteps[] {
+  return [...records].sort((a, b) => a.week - b.week);
+}
+
+export type DailyStepsHistoryPoint = {
+  label: string;
+  value: number;
+  week: number;
+  dayIndex: number;
+  recordId: string;
+};
+
+/** Serie histórica plana (todas las semanas) para gráficos. */
+export function buildDailyStepsHistory(records: DailySteps[]): DailyStepsHistoryPoint[] {
+  return sortDailyStepsByWeek(records).flatMap((record) =>
+    record.days.map((day, dayIndex) => ({
+      label: `S${record.week} ${day.label}`,
+      value: day.value,
+      week: record.week,
+      dayIndex,
+      recordId: record._id,
+    })),
+  );
+}

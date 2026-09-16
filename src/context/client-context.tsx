@@ -2,16 +2,23 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
-import { fetchClientById, loginClient as apiLogin } from '@/api/clients';
+import {
+  fetchClientById,
+  loginClient as apiLogin,
+  updateClient as apiUpdateClient,
+  type UpdateClientPayload,
+} from '@/api/clients';
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
 
 type ClientContextValue = {
   client: Client | null;
   isAuthenticated: boolean;
+  saving: boolean;
   login: (email: string, password: string) => Promise<Client>;
   logout: () => void;
   refreshClient: () => Promise<void>;
+  updateClientProfile: (payload: UpdateClientPayload) => Promise<Client>;
   setClient: (client: Client | null) => void;
 };
 
@@ -19,6 +26,7 @@ const ClientContext = createContext<ClientContextValue | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const login = useCallback(async (email: string, password: string) => {
     const logged = await apiLogin(email, password);
@@ -36,16 +44,35 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     setClient(fresh);
   }, [client?._id]);
 
+  const updateClientProfile = useCallback(
+    async (payload: UpdateClientPayload) => {
+      if (!client?._id) {
+        throw new Error('No hay cliente autenticado');
+      }
+      setSaving(true);
+      try {
+        const updated = await apiUpdateClient(client._id, payload);
+        setClient(updated);
+        return updated;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [client?._id],
+  );
+
   const value = useMemo<ClientContextValue>(
     () => ({
       client,
       isAuthenticated: client !== null,
+      saving,
       login,
       logout,
       refreshClient,
+      updateClientProfile,
       setClient,
     }),
-    [client, login, logout, refreshClient],
+    [client, saving, login, logout, refreshClient, updateClientProfile],
   );
 
   return <ClientContext.Provider value={value}>{children}</ClientContext.Provider>;

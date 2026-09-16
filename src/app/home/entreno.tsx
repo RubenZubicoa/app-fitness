@@ -103,7 +103,7 @@ export default function EntrenoScreen() {
       </View>
 
       <View>
-        <SectionHeader title="Rutina actual" actionLabel="Ver explicación" />
+        <SectionHeader title="Rutina actual" />
         {routineLoading ? (
           <Card>
             <ThemedText type="body" themeColor="textSecondary">

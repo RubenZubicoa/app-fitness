@@ -87,3 +87,34 @@ export async function createMeasurement(
   });
   return normalizeMeasurement(raw);
 }
+
+export type UpdateMeasurementPayload = {
+  value?: number;
+  delta?: number;
+  date?: string;
+  MeasurementId?: string;
+};
+
+/** Actualiza medida: PUT /api/measurements/:id */
+export async function updateMeasurement(
+  id: string,
+  payload: UpdateMeasurementPayload,
+): Promise<Measurement> {
+  const raw = await request<Record<string, unknown>>(
+    `/api/measurements/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+  );
+  return normalizeMeasurement(raw);
+}
+
+/** Elimina medida: DELETE /api/measurements/:id */
+export async function deleteMeasurement(id: string): Promise<void> {
+  await request<void>(
+    `/api/measurements/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+    { allowEmpty: true },
+  );
+}

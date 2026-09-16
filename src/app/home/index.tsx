@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { BarChart } from '@/components/charts/bar-chart';
 import { DailyStepsCard } from '@/components/dashboard/daily-steps-card';
 import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { LineChart } from '@/components/charts/line-chart';
@@ -19,7 +18,7 @@ import { ThemeToggleButton } from '@/components/ui/theme-toggle-button';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useDailySteps } from '@/context/daily-steps-context';
-import { useMacros } from '@/context/macros-context';
+import { useRoutine } from '@/context/routine-context';
 import { useWeights } from '@/context/weights-context';
 import { useWellness } from '@/context/wellness-context';
 import { useWorkoutHistory } from '@/context/workout-history-context';
@@ -28,7 +27,7 @@ import { computeWeeklyScore } from '@/data/weekly-score';
 import { useTheme } from '@/hooks/use-theme';
 import { formatChartDate } from '@/types/measurement';
 import { getLatestWeightValue } from '@/types/weight';
-import { computeWorkoutWeek } from '@/types/workout-history';
+import { countWorkoutsInWeek } from '@/types/workout-history';
 
 const quickActions = [
   { icon: 'scale-outline', label: 'Registrar peso', tone: Brand.blue, bg: '#E4EEFD', href: '/home/progreso' },
@@ -44,30 +43,48 @@ export default function DashboardScreen() {
   const { weight, loading: weightLoading, error: weightError } = useWeights();
   const { current: dailySteps } = useDailySteps();
   const { enriched: wellness } = useWellness();
-  const { macros } = useMacros();
+  const { routine } = useRoutine();
   const { workoutHistory } = useWorkoutHistory();
 
-  const workoutWeek = useMemo(
-    () => (client ? computeWorkoutWeek(workoutHistory, client.week) : []),
+  const workoutsThisWeek = useMemo(
+    () => (client ? countWorkoutsInWeek(workoutHistory, client.week) : 0),
     [client, workoutHistory],
   );
+
+  const plannedThisWeek = routine.length;
 
   const weeklyScore = useMemo(
     () =>
       computeWeeklyScore({
-        workouts: workoutWeek,
-        macros,
+        workoutsCompleted: workoutsThisWeek,
+        workoutsPlanned: plannedThisWeek,
         steps: dailySteps,
         wellness,
+        weight,
       }),
-    [dailySteps, wellness, macros, workoutWeek],
+    [dailySteps, wellness, weight, workoutsThisWeek, plannedThisWeek],
   );
 
   if (!client) return null;
 
   const programProgress = client.week / client.totalWeeks;
   const latestWeight = weight ? getLatestWeightValue(weight) : null;
-  const lost = weight && latestWeight != null ? (weight.start - latestWeight).toFixed(1) : '—';
+  const weightDelta =
+    weight && latestWeight != null
+      ? Number((latestWeight - weight.start).toFixed(1))
+      : null;
+  const weightDeltaLabel =
+    weightDelta == null
+      ? 'Sin registros'
+      : weightDelta === 0
+        ? 'Sin cambios vs inicio'
+        : `${weightDelta > 0 ? '+' : ''}${weightDelta} ${weight?.unit ?? 'kg'} vs inicio`;
+  const weightDeltaTone =
+    weight && latestWeight != null && weightDelta != null && weightDelta !== 0
+      ? Math.abs(latestWeight - weight.target) <= Math.abs(weight.start - weight.target)
+        ? 'up'
+        : 'down'
+      : 'neutral';
   const phase = getCurrentPhase(client.phase);
   const daysLeft = getDaysLeft(client.endDate);
 
@@ -111,24 +128,38 @@ export default function DashboardScreen() {
 
       <View style={styles.statsRow}>
         <StatTile
-          icon="trending-down"
+          icon="scale-outline"
           iconColor={theme.success}
           iconBg={theme.primarySoft}
-          label="Peso perdido"
-          value={`-${lost}`}
-          unit="kg"
-          delta="En 6 semanas"
-          deltaTone="up"
+          label="Peso corporal"
+          value={latestWeight != null ? String(latestWeight) : '—'}
+          unit={weight?.unit ?? 'kg'}
+          delta={weightDeltaLabel}
+          deltaTone={weightDeltaTone}
         />
         <StatTile
-          icon="flame-outline"
+          icon="barbell-outline"
           iconColor={theme.gold}
           iconBg={theme.goldSoft}
-          label="Racha activa"
-          value="12"
-          unit="días"
-          delta="¡Récord!"
-          deltaTone="up"
+          label="Entrenos esta semana"
+          value={
+            plannedThisWeek > 0
+              ? `${workoutsThisWeek}/${plannedThisWeek}`
+              : String(workoutsThisWeek)
+          }
+          unit={plannedThisWeek > 0 ? undefined : 'sesiones'}
+          delta={
+            plannedThisWeek > 0
+              ? workoutsThisWeek >= plannedThisWeek
+                ? 'Semana completada'
+                : `Faltan ${Math.max(0, plannedThisWeek - workoutsThisWeek)}`
+              : 'Sin rutina asignada'
+          }
+          deltaTone={
+            plannedThisWeek > 0 && workoutsThisWeek >= plannedThisWeek
+              ? 'up'
+              : 'neutral'
+          }
         />
       </View>
 
@@ -223,25 +254,11 @@ export default function DashboardScreen() {
       </View>
 
       <View>
-        <SectionHeader title="Entrenos de la semana" actionLabel="Rutina" onAction={() => router.push('/home/entreno')} />
-        <Card>
-          <View style={styles.workoutHeader}>
-            <View style={styles.row}>
-              <IconBadge name="checkmark-done" color={theme.teal} background={theme.primarySoft} size={40} />
-              <View>
-                <ThemedText type="h3">3 de 4 completados</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Te queda 1 entreno esta semana
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-          <BarChart data={workoutWeek} height={140} colors={Brand.gradientPrimary} />
-        </Card>
-      </View>
-
-      <View>
-        <SectionHeader title="Pasos diarios" />
+        <SectionHeader
+          title="Pasos diarios"
+          actionLabel="Ver histórico"
+          onAction={() => router.push('/historico-pasos')}
+        />
         <DailyStepsCard />
       </View>
 
@@ -329,14 +346,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: Radius.pill,
-  },
-  workoutHeader: {
-    marginBottom: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
   actionsGrid: {
     flexDirection: 'row',

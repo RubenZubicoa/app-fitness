@@ -1,5 +1,7 @@
 import type { DailySteps } from '@/types/daily-steps';
 import type { EnrichedWellness } from '@/types/wellness';
+import type { Weight } from '@/types/weight';
+import { getLatestWeightValue } from '@/types/weight';
 
 export type WeeklyScoreBreakdownItem = {
   label: string;
@@ -12,45 +14,15 @@ export type WeeklyScore = {
   breakdown: WeeklyScoreBreakdownItem[];
 };
 
-type WorkoutDay = {
-  label: string;
-  value: number;
-  highlight?: boolean;
-};
-
-type MacroItem = {
-  grams: number;
-  target: number;
-};
-
-type MacrosInput = {
-  calories: number;
-  target: number;
-  items: readonly MacroItem[];
-} | null;
-
 function clampScore(value: number): number {
   if (Number.isNaN(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-/** Adherencia de entrenos (media 0–100 de la semana). */
-export function scoreFromWorkouts(days: readonly WorkoutDay[]): number {
-  if (days.length === 0) return 0;
-  const sum = days.reduce((acc, d) => acc + d.value, 0);
-  return clampScore(sum / days.length);
-}
-
-/** Adherencia nutricional (calorías + macros vs objetivo). */
-export function scoreFromNutrition(macros: MacrosInput): number {
-  if (!macros || macros.target <= 0 || macros.items.length === 0) return 0;
-  const calorieScore = Math.min(macros.calories / macros.target, 1) * 100;
-  const macroScores = macros.items.map((item) =>
-    item.target > 0 ? Math.min(item.grams / item.target, 1) * 100 : 0,
-  );
-  const all = [calorieScore, ...macroScores];
-  const avg = all.reduce((a, b) => a + b, 0) / all.length;
-  return clampScore(avg);
+/** Adherencia de entrenos: sesiones completadas / planificadas esta semana. */
+export function scoreFromWorkouts(completed: number, planned: number): number {
+  if (planned <= 0) return 0;
+  return clampScore((Math.max(0, completed) / planned) * 100);
 }
 
 /** Adherencia de pasos (media diaria vs goal, tope 100). */
@@ -61,25 +33,46 @@ export function scoreFromSteps(steps: DailySteps | null): number {
   return clampScore(avg);
 }
 
-/** Descanso a partir de la sensación `sueno` (0–100). */
-export function scoreFromRest(wellness: EnrichedWellness[]): number {
-  const sleep = wellness.find((w) => w.key === 'sueno');
-  if (!sleep) return 0;
-  return clampScore(sleep.value);
+/** Bienestar: media de las sensaciones más recientes (0–100). */
+export function scoreFromWellness(wellness: EnrichedWellness[]): number {
+  if (wellness.length === 0) return 0;
+  const avg = wellness.reduce((acc, item) => acc + item.value, 0) / wellness.length;
+  return clampScore(avg);
 }
 
-/** Calcula la puntuación semanal a partir de entrenos, nutrición, pasos y descanso. */
+/**
+ * Progreso hacia el peso objetivo:
+ * 100 = en el objetivo; 0 = igual o más lejos que al inicio.
+ */
+export function scoreFromWeight(weight: Weight | null): number {
+  if (!weight) return 0;
+  const current = getLatestWeightValue(weight);
+  const startDistance = Math.abs(weight.start - weight.target);
+  const currentDistance = Math.abs(current - weight.target);
+
+  if (startDistance <= 0) {
+    return currentDistance <= 0.05 ? 100 : 0;
+  }
+
+  return clampScore((1 - currentDistance / startDistance) * 100);
+}
+
+/** Calcula la puntuación semanal a partir de datos reales del cliente. */
 export function computeWeeklyScore(input: {
-  workouts: readonly WorkoutDay[];
-  macros: MacrosInput;
+  workoutsCompleted: number;
+  workoutsPlanned: number;
   steps: DailySteps | null;
   wellness: EnrichedWellness[];
+  weight: Weight | null;
 }): WeeklyScore {
   const breakdown: WeeklyScoreBreakdownItem[] = [
-    { label: 'Entrenos', value: scoreFromWorkouts(input.workouts) },
-    { label: 'Nutrición', value: scoreFromNutrition(input.macros) },
+    {
+      label: 'Entrenos',
+      value: scoreFromWorkouts(input.workoutsCompleted, input.workoutsPlanned),
+    },
     { label: 'Pasos', value: scoreFromSteps(input.steps) },
-    { label: 'Descanso', value: scoreFromRest(input.wellness) },
+    { label: 'Bienestar', value: scoreFromWellness(input.wellness) },
+    { label: 'Peso', value: scoreFromWeight(input.weight) },
   ];
 
   const value = clampScore(

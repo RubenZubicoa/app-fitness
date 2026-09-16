@@ -23,6 +23,8 @@ type LineChartProps = {
   /** Muestra el punto final resaltado. */
   highlightLast?: boolean;
   showDots?: boolean;
+  /** Si es false, no se renderizan las etiquetas del eje X (sí el tooltip). */
+  showAxisLabels?: boolean;
   /** Unidad opcional en el tooltip (ej. "kg", "cm"). */
   unit?: string;
 };
@@ -57,6 +59,7 @@ export function LineChart({
   fillColor,
   highlightLast = true,
   showDots = true,
+  showAxisLabels = true,
   unit,
 }: LineChartProps) {
   const theme = useTheme();
@@ -67,9 +70,10 @@ export function LineChart({
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
+  const visibleAxisLabels = showAxisLabels && labels && labels.length > 0;
   const padX = 8;
   const padTop = 16;
-  const padBottom = labels ? 24 : 12;
+  const padBottom = visibleAxisLabels ? 24 : 12;
   const chartW = Math.max(width - padX * 2, 1);
   const chartH = height - padTop - padBottom;
 
@@ -217,7 +221,7 @@ export function LineChart({
         </View>
       ) : null}
 
-      {labels && (
+      {visibleAxisLabels && labels ? (
         <View style={styles.labels} pointerEvents="none">
           {labels.map((l, i) => (
             <ThemedText key={i} type="caption" themeColor="textMuted" style={styles.label}>
@@ -225,7 +229,7 @@ export function LineChart({
             </ThemedText>
           ))}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }

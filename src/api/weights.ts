@@ -168,3 +168,55 @@ export async function appendWeightEntry(input: {
     shareInCommunity,
   });
 }
+
+/** Actualiza un punto de la serie de peso por índice. */
+export async function updateWeightEntryAtIndex(input: {
+  existing: Weight;
+  index: number;
+  value: number;
+  date?: string;
+}): Promise<Weight> {
+  const { existing, index, value } = input;
+  const len = Math.min(existing.labels.length, existing.data.length);
+  if (index < 0 || index >= len) {
+    throw new Error('Registro de peso no encontrado');
+  }
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('El peso debe ser mayor que 0');
+  }
+
+  const labels = existing.labels.slice(0, len);
+  const data = existing.data.slice(0, len);
+  data[index] = value;
+  if (input.date) labels[index] = input.date;
+
+  return updateWeight(existing._id, {
+    labels,
+    data,
+    current: data[data.length - 1] ?? existing.current,
+  });
+}
+
+/** Elimina un punto de la serie de peso por índice. */
+export async function deleteWeightEntryAtIndex(input: {
+  existing: Weight;
+  index: number;
+}): Promise<Weight> {
+  const { existing, index } = input;
+  const len = Math.min(existing.labels.length, existing.data.length);
+  if (index < 0 || index >= len) {
+    throw new Error('Registro de peso no encontrado');
+  }
+
+  const labels = existing.labels.slice(0, len);
+  const data = existing.data.slice(0, len);
+  labels.splice(index, 1);
+  data.splice(index, 1);
+
+  return updateWeight(existing._id, {
+    labels,
+    data,
+    current: data.length > 0 ? data[data.length - 1] : existing.start,
+    ...(data.length === 0 ? { start: existing.start } : {}),
+  });
+}

@@ -301,15 +301,13 @@ export default function ProgresoScreen() {
               style={styles.flex}
               onPress={() => router.push('/anadir-registro' as Href)}
             />
-            <Button
-              title="Fotos"
-              icon="images-outline"
-              variant="ghost"
-              fullWidth={false}
-              style={styles.photoBtn}
-              onPress={() => router.push('/anadir-registro' as Href)}
-            />
           </View>
+          <Button
+            title="Gestionar progreso"
+            icon="create-outline"
+            variant="secondary"
+            onPress={() => router.push('/gestionar-progreso' as Href)}
+          />
         </Card>
       </View>
     </Screen>
@@ -438,5 +436,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   flex: { flex: 1 },
-  photoBtn: { minWidth: 110 },
 });

@@ -15,7 +15,11 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  options?: { allowEmpty?: boolean },
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -27,6 +31,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
   } catch {
     throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
+  }
+
+  if (options?.allowEmpty && res.status === 204) {
+    return undefined as T;
   }
 
   const data = await parseJson(res);
@@ -120,8 +128,28 @@ export async function uploadProgressImage(
 
 /** DELETE /api/progress-images/:id */
 export async function deleteProgressImage(id: string): Promise<void> {
-  await fetch(`${API_URL}/api/progress-images/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers: { Accept: 'application/json' },
-  });
+  await request<unknown>(
+    `/api/progress-images/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+    { allowEmpty: true },
+  );
+}
+
+/**
+ * Reemplaza la imagen de un registro:
+ * sube una nueva y elimina la anterior.
+ */
+export async function replaceProgressImage(
+  existingId: string,
+  clientId: string,
+  imageUri: string,
+  filename = 'photo.jpg',
+): Promise<ProgressImage> {
+  const uploaded = await uploadProgressImage(clientId, imageUri, filename);
+  try {
+    await deleteProgressImage(existingId);
+  } catch {
+    // La nueva imagen ya está guardada; el borrado antiguo puede reintentarse.
+  }
+  return uploaded;
 }

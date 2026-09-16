@@ -32,25 +32,22 @@ import {
   socialFeedAction,
   socialFeedDetail,
   socialFeedMetric,
-  type SocialFeedKind,
 } from '@/types/social-feed';
 import type { WorkoutMedia } from '@/types/workout-history';
 
-type FilterKey = 'all' | SocialFeedKind;
+type FeedFilterKey = 'all' | 'workout' | 'steps' | 'challenge';
 
-const FILTERS: { key: FilterKey; label: string }[] = [
+const FEED_KINDS = ['workout', 'steps', 'challenge'] as const;
+
+const FILTERS: { key: FeedFilterKey; label: string }[] = [
   { key: 'all', label: 'Todos' },
   { key: 'workout', label: 'Entrenos' },
-  { key: 'weight', label: 'Peso' },
-  { key: 'photos', label: 'Fotos' },
-  { key: 'measurement', label: 'Medidas' },
   { key: 'steps', label: 'Pasos' },
   { key: 'challenge', label: 'Retos' },
-  { key: 'wellness', label: 'Bienestar' },
 ];
 
 const kindMeta: Record<
-  SocialFeedKind,
+  (typeof FEED_KINDS)[number],
   {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
@@ -58,12 +55,8 @@ const kindMeta: Record<
   }
 > = {
   workout: { icon: 'barbell', label: 'Entreno', tone: 'primary' },
-  weight: { icon: 'scale-outline', label: 'Peso', tone: 'gold' },
-  photos: { icon: 'camera', label: 'Fotos', tone: 'purple' },
-  measurement: { icon: 'body-outline', label: 'Medidas', tone: 'teal' },
   steps: { icon: 'footsteps', label: 'Pasos', tone: 'teal' },
   challenge: { icon: 'trophy', label: 'Reto', tone: 'gold' },
-  wellness: { icon: 'heart', label: 'Bienestar', tone: 'coral' },
 };
 
 function toneColors(
@@ -115,7 +108,7 @@ export default function SocialScreen() {
   const theme = useTheme();
   const { client } = useClient();
   const { feed, loading: feedLoading, error: feedError, refreshFeed } = useSocialFeed();
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilter] = useState<FeedFilterKey>('all');
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [stepsPeriod, setStepsPeriod] = useState<StepsRankingPeriod>('week');
   const [highlights, setHighlights] = useState<CommunityHighlight[]>(
@@ -171,10 +164,12 @@ export default function SocialScreen() {
 
   const stepsLeader = stepsRanking[0]?.steps ?? 1;
 
-  const posts = useMemo(
-    () => (filter === 'all' ? feed : feed.filter((p) => p.kind === filter)),
-    [feed, filter],
-  );
+  const posts = useMemo(() => {
+    const allowed = feed.filter((p) =>
+      (FEED_KINDS as readonly string[]).includes(p.kind),
+    );
+    return filter === 'all' ? allowed : allowed.filter((p) => p.kind === filter);
+  }, [feed, filter]);
 
   const toggleLike = (id: string) => {
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -187,7 +182,7 @@ export default function SocialScreen() {
         <GradientHeader
           eyebrow="Comunidad REGENESIS"
           title="Logros compartidos"
-          subtitle="Entrenos, peso, fotos y retos de toda la comunidad"
+          subtitle="Entrenos, pasos y retos de toda la comunidad"
           showBack
           gradient={Brand.gradientNavy}
         />
@@ -353,6 +348,9 @@ export default function SocialScreen() {
           </Card>
         ) : (
           posts.map((post) => {
+            if (post.kind !== 'workout' && post.kind !== 'steps' && post.kind !== 'challenge') {
+              return null;
+            }
             const meta = kindMeta[post.kind];
             const colors = toneColors(meta.tone, theme);
             const isLiked = !!liked[post._id];
@@ -401,19 +399,6 @@ export default function SocialScreen() {
                     <ThemedText type="h3" style={{ color: colors.color }}>
                       {metric}
                     </ThemedText>
-                  </View>
-                ) : null}
-
-                {post.kind === 'photos' ? (
-                  <View style={styles.photoRow}>
-                    {post.photos.map((uri) => (
-                      <Image
-                        key={uri}
-                        source={{ uri }}
-                        style={styles.photo}
-                        contentFit="cover"
-                      />
-                    ))}
                   </View>
                 ) : null}
 
