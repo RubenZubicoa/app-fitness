@@ -140,18 +140,6 @@ export default function MasScreen() {
           })}
         </View>
       </View>
-
-      <Card style={styles.renewCard}>
-        <View style={styles.renewRow}>
-          <IconBadge name="sparkles" color={theme.gold} background={theme.goldSoft} size={44} />
-          <View style={styles.renewBody}>
-            <ThemedText type="h3">Renovación con descuento</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Al completar las 12 semanas podrás renovar tu plan con un 15% de descuento.
-            </ThemedText>
-          </View>
-        </View>
-      </Card>
     </Screen>
   );
 }
@@ -193,14 +181,6 @@ const styles = StyleSheet.create({
   menuBody: {
     flex: 1,
     gap: 4,
-  },
-  renewCard: {
-    marginTop: Spacing.one,
-  },
-  renewRow: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    alignItems: 'center',
   },
   renewBody: {
     flex: 1,
