@@ -182,9 +182,5 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  renewBody: {
-    flex: 1,
-    gap: 4,
-  },
   pressed: { opacity: 0.7 },
 });
