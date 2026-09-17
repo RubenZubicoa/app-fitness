@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { Redirect } from 'expo-router';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Redirect, router } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 import {
@@ -8,6 +8,7 @@ import {
   updateClient as apiUpdateClient,
   type UpdateClientPayload,
 } from '@/api/clients';
+import { clearAuthToken, setAuthFailureHandler } from '@/api/http';
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
 
@@ -28,14 +29,24 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const logout = useCallback(() => {
+    clearAuthToken();
+    setClient(null);
+    router.replace('/');
+  }, []);
+
+  useEffect(() => {
+    setAuthFailureHandler(() => {
+      setClient(null);
+      router.replace('/');
+    });
+    return () => setAuthFailureHandler(null);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const logged = await apiLogin(email, password);
     setClient(logged);
     return logged;
-  }, []);
-
-  const logout = useCallback(() => {
-    setClient(null);
   }, []);
 
   const refreshClient = useCallback(async () => {

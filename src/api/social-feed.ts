@@ -1,4 +1,4 @@
-import { API_URL } from '@/constants/api';
+import { apiRequest } from '@/api/http';
 import { fetchAllClients } from '@/api/clients';
 import { fetchStepsRanking } from '@/api/daily-steps';
 import { fetchClientWorkoutHistory } from '@/api/workout-history';
@@ -12,46 +12,6 @@ import {
   type CommunityStats,
 } from '@/types/community-stats';
 
-type ApiErrorBody = { message?: string };
-
-async function parseJson(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      headers: {
-        Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...init?.headers,
-      },
-      ...init,
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
-  }
-
-  const data = await parseJson(res);
-
-  if (!res.ok) {
-    const message =
-      data && typeof data === 'object' && 'message' in data
-        ? String((data as ApiErrorBody).message)
-        : `Error ${res.status}`;
-    throw new Error(message);
-  }
-
-  return data as T;
-}
-
 /** Feed comunitario: GET /api/social-feed?kind=...&limit=... */
 export async function fetchSocialFeed(options?: {
   kind?: SocialFeedKind;
@@ -62,7 +22,7 @@ export async function fetchSocialFeed(options?: {
   if (options?.limit != null) params.set('limit', String(options.limit));
 
   const query = params.toString();
-  const raw = await request<unknown[]>(`/api/social-feed${query ? `?${query}` : ''}`);
+  const raw = await apiRequest<unknown[]>(`/api/social-feed${query ? `?${query}` : ''}`);
   if (!Array.isArray(raw)) return [];
 
   return raw
@@ -116,7 +76,7 @@ async function fetchCommunityStatsFallback(): Promise<CommunityStats> {
 /** Estadísticas de comunidad: GET /api/social-feed/stats (con fallback). */
 export async function fetchCommunityStats(): Promise<CommunityStats> {
   try {
-    const raw = await request<Record<string, unknown>>('/api/social-feed/stats');
+    const raw = await apiRequest<Record<string, unknown>>('/api/social-feed/stats');
     return normalizeCommunityStats(raw);
   } catch {
     return fetchCommunityStatsFallback();

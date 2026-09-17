@@ -1,64 +1,9 @@
-import { API_URL } from '@/constants/api';
+import { apiFetch, apiRequest, parseJson } from '@/api/http';
 import { normalizeWeight, type Weight } from '@/types/weight';
-
-type ApiErrorBody = { message?: string };
-
-async function parseJson(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-async function request<T>(
-  path: string,
-  init?: RequestInit,
-  options?: { allowEmpty?: boolean },
-): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      headers: {
-        Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...init?.headers,
-      },
-      ...init,
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
-  }
-
-  if (options?.allowEmpty && res.status === 204) {
-    return undefined as T;
-  }
-
-  const data = await parseJson(res);
-
-  if (!res.ok) {
-    const message =
-      data && typeof data === 'object' && 'message' in data
-        ? String((data as ApiErrorBody).message)
-        : `Error ${res.status}`;
-    throw new Error(message);
-  }
-
-  return data as T;
-}
 
 /** Serie de peso de un cliente: GET /api/clients/:id/weights */
 export async function fetchClientWeight(clientId: string): Promise<Weight | null> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/clients/${encodeURIComponent(clientId)}/weights`, {
-      headers: { Accept: 'application/json' },
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
-  }
+  const res = await apiFetch(`/api/clients/${encodeURIComponent(clientId)}/weights`);
 
   if (res.status === 404) return null;
 
@@ -67,7 +12,7 @@ export async function fetchClientWeight(clientId: string): Promise<Weight | null
   if (!res.ok) {
     const message =
       data && typeof data === 'object' && 'message' in data
-        ? String((data as ApiErrorBody).message)
+        ? String((data as { message?: string }).message)
         : `Error ${res.status}`;
     throw new Error(message);
   }
@@ -90,7 +35,7 @@ export type CreateWeightPayload = {
 export async function createWeight(
   payload: CreateWeightPayload & { shareInCommunity?: boolean },
 ): Promise<Weight> {
-  const raw = await request<Record<string, unknown>>('/api/weights', {
+  const raw = await apiRequest<Record<string, unknown>>('/api/weights', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -105,7 +50,7 @@ export async function updateWeight(
     shareInCommunity?: boolean;
   },
 ): Promise<Weight> {
-  const raw = await request<Record<string, unknown>>(
+  const raw = await apiRequest<Record<string, unknown>>(
     `/api/weights/${encodeURIComponent(id)}`,
     {
       method: 'PUT',

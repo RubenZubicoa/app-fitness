@@ -1,54 +1,7 @@
 import { Platform } from 'react-native';
 
-import { API_URL } from '@/constants/api';
+import { apiFetch, apiRequest, parseJson } from '@/api/http';
 import { normalizeProgressImage, type ProgressImage } from '@/types/progress-image';
-
-type ApiErrorBody = { message?: string };
-
-async function parseJson(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-async function request<T>(
-  path: string,
-  init?: RequestInit,
-  options?: { allowEmpty?: boolean },
-): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      headers: {
-        Accept: 'application/json',
-        ...init?.headers,
-      },
-      ...init,
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
-  }
-
-  if (options?.allowEmpty && res.status === 204) {
-    return undefined as T;
-  }
-
-  const data = await parseJson(res);
-
-  if (!res.ok) {
-    const message =
-      data && typeof data === 'object' && 'message' in data
-        ? String((data as ApiErrorBody).message)
-        : `Error ${res.status}`;
-    throw new Error(message);
-  }
-
-  return data as T;
-}
 
 async function appendImageField(
   formData: FormData,
@@ -76,7 +29,7 @@ async function appendImageField(
 
 /** GET /api/progress-images?clientId=... */
 export async function fetchProgressImages(clientId: string): Promise<ProgressImage[]> {
-  const raw = await request<unknown[]>(
+  const raw = await apiRequest<unknown[]>(
     `/api/progress-images?clientId=${encodeURIComponent(clientId)}`,
   );
   return raw.map((r) => normalizeProgressImage(r as Record<string, unknown>));
@@ -84,7 +37,7 @@ export async function fetchProgressImages(clientId: string): Promise<ProgressIma
 
 /** GET /api/progress-images/:id */
 export async function fetchProgressImageById(id: string): Promise<ProgressImage> {
-  const raw = await request<Record<string, unknown>>(
+  const raw = await apiRequest<Record<string, unknown>>(
     `/api/progress-images/${encodeURIComponent(id)}`,
   );
   return normalizeProgressImage(raw);
@@ -103,22 +56,17 @@ export async function uploadProgressImage(
   formData.append('clientId', clientId);
   await appendImageField(formData, imageUri, filename);
 
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/progress-images`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: formData,
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
-  }
+  const res = await apiFetch(
+    '/api/progress-images',
+    { method: 'POST', body: formData },
+    { rawBody: true },
+  );
 
   const data = await parseJson(res);
   if (!res.ok) {
     const message =
       data && typeof data === 'object' && 'message' in data
-        ? String((data as ApiErrorBody).message)
+        ? String((data as { message?: string }).message)
         : `Error ${res.status}`;
     throw new Error(message);
   }
@@ -128,7 +76,7 @@ export async function uploadProgressImage(
 
 /** DELETE /api/progress-images/:id */
 export async function deleteProgressImage(id: string): Promise<void> {
-  await request<unknown>(
+  await apiRequest<unknown>(
     `/api/progress-images/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
     { allowEmpty: true },
