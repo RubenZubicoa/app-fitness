@@ -31,6 +31,7 @@ export default function DatosPersonalesScreen() {
   const [telefono, setTelefono] = useState('');
   const [goal, setGoal] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [avatarChanged, setAvatarChanged] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export default function DatosPersonalesScreen() {
     setTelefono(client.telefono);
     setGoal(client.goal);
     setAvatar(client.avatar);
+    setAvatarChanged(false);
   }, [client]);
 
   if (!client) return null;
@@ -65,6 +67,7 @@ export default function DatosPersonalesScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     setAvatar(result.assets[0].uri);
+    setAvatarChanged(true);
     setSuccess(null);
     setError(null);
   };
@@ -78,7 +81,6 @@ export default function DatosPersonalesScreen() {
     const trimmedEmail = email.trim();
     const trimmedPhone = telefono.trim();
     const trimmedGoal = goal.trim();
-    const trimmedAvatar = avatar.trim();
 
     if (!trimmedName || !trimmedFullName) {
       setError('Nombre y nombre completo son obligatorios');
@@ -106,7 +108,7 @@ export default function DatosPersonalesScreen() {
         email: trimmedEmail,
         telefono: trimmedPhone,
         goal: trimmedGoal,
-        avatar: trimmedAvatar,
+        ...(avatarChanged ? { avatar: avatar.trim() } : {}),
         ...(password
           ? {
               password,
@@ -116,6 +118,7 @@ export default function DatosPersonalesScreen() {
       });
       setPassword('');
       setPasswordConfirm('');
+      setAvatarChanged(false);
       setSuccess('Datos guardados correctamente');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron guardar los datos');

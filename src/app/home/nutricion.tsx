@@ -3,7 +3,6 @@ import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser'
 import { useState, useCallback } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,12 +20,6 @@ import { useSupplements } from '@/context/supplements-context';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
 import type { SupplementElement } from '@/types/supplements';
-
-const toneMap = {
-  primary: 'primary',
-  gold: 'gold',
-  teal: 'teal',
-} as const;
 
 export default function NutricionScreen() {
   const theme = useTheme();
@@ -178,35 +171,6 @@ export default function NutricionScreen() {
                   </ThemedText>
                   <Badge label={`Fase ${phase.id} · Semana ${client.week}`} tone="gold" />
                 </View>
-              </View>
-              <View style={styles.macrosRow}>
-                {macros.items.map((m) => {
-                  const toneKey = (m.tone in toneMap ? m.tone : 'primary') as keyof typeof toneMap;
-                  const tone = toneMap[toneKey];
-                  const color = theme[tone];
-                  const pct = m.target > 0 ? m.grams / m.target : 0;
-                  return (
-                    <View key={m.key} style={styles.macroItem}>
-                      <ProgressRing
-                        progress={pct}
-                        size={72}
-                        strokeWidth={7}
-                        colors={[color, color]}>
-                        <ThemedText type="smallBold" style={styles.macroPct}>
-                          {Math.round(pct * 100)}%
-                        </ThemedText>
-                      </ProgressRing>
-                      <View style={styles.macroMeta}>
-                        <ThemedText type="smallBold" style={styles.macroLabel} numberOfLines={2}>
-                          {m.shortLabel}
-                        </ThemedText>
-                        <ThemedText type="caption" themeColor="textMuted" style={styles.macroTarget}>
-                          {m.grams} / {m.target} g
-                        </ThemedText>
-                      </View>
-                    </View>
-                  );
-                })}
               </View>
             </>
           )}
@@ -478,7 +442,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
-    marginBottom: Spacing.four,
   },
   calorieGoal: {
     alignItems: 'center',
@@ -491,32 +454,6 @@ const styles = StyleSheet.create({
   macroInfo: {
     flex: 1,
     gap: Spacing.one,
-  },
-  macrosRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  macroItem: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  macroMeta: {
-    alignItems: 'center',
-    gap: 2,
-    width: '100%',
-  },
-  macroLabel: {
-    textAlign: 'center',
-    fontSize: 12,
-  },
-  macroTarget: {
-    textAlign: 'center',
-  },
-  macroPct: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   meals: { gap: Spacing.two },
   mealCard: { paddingVertical: Spacing.two + 4 },

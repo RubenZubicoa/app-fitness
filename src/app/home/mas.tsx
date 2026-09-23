@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+import type { ComponentProps } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
@@ -17,14 +18,29 @@ import { usePrograms } from '@/context/programs-context';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
 
-const menuItems = [
+const toneColors = {
+  primary: { color: Brand.blue, bg: '#E4EEFD' },
+  gold: { color: Brand.gold, bg: '#FBF0D8' },
+  purple: { color: Brand.purple, bg: '#EDE7FE' },
+  teal: { color: Brand.teal, bg: '#D8F5F1' },
+};
+
+const menuItems: {
+  title: string;
+  subtitle: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  href?: Href;
+  comingSoon?: boolean;
+  tone: keyof typeof toneColors;
+  badge: string;
+}[] = [
   {
     title: 'Comunidad',
     subtitle: 'Logros, fotos y ranking de la comunidad',
     icon: 'people-outline',
-    href: '/social',
+    comingSoon: true,
     tone: 'teal',
-    badge: 'Nuevo',
+    badge: 'Próximamente',
   },
   {
     title: 'Revisiones',
@@ -46,18 +62,11 @@ const menuItems = [
     title: 'Resultados finales',
     subtitle: 'Comparativa y gráfica al terminar',
     icon: 'trophy-outline',
-    href: '/resultados',
+    comingSoon: true,
     tone: 'purple',
-    badge: 'Semana 12',
+    badge: 'Próximamente',
   },
-] as const;
-
-const toneColors = {
-  primary: { color: Brand.blue, bg: '#E4EEFD' },
-  gold: { color: Brand.gold, bg: '#FBF0D8' },
-  purple: { color: Brand.purple, bg: '#EDE7FE' },
-  teal: { color: Brand.teal, bg: '#D8F5F1' },
-};
+];
 
 export default function MasScreen() {
   const theme = useTheme();
@@ -114,7 +123,13 @@ export default function MasScreen() {
               <Pressable
                 key={item.title}
                 style={({ pressed }) => [pressed && styles.pressed]}
-                onPress={() => router.push(item.href)}>
+                onPress={() => {
+                  if (item.comingSoon) {
+                    Alert.alert('Próximamente', 'Esta sección se desarrollará más adelante.');
+                    return;
+                  }
+                  if (item.href) router.push(item.href);
+                }}>
                 <Card style={styles.menuItem}>
                   <IconBadge name={item.icon} color={colors.color} background={colors.bg} size={48} />
                   <View style={styles.menuBody}>
