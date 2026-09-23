@@ -22,7 +22,7 @@ import { useRoutine } from '@/context/routine-context';
 import { useWeights } from '@/context/weights-context';
 import { useWellness } from '@/context/wellness-context';
 import { useWorkoutHistory } from '@/context/workout-history-context';
-import { getCurrentPhase, getDaysLeft } from '@/data/program';
+import { getCurrentPhase, getDaysLeft, getProgramProgress } from '@/data/program';
 import { computeWeeklyScore } from '@/data/weekly-score';
 import { useTheme } from '@/hooks/use-theme';
 import { formatChartDate } from '@/types/measurement';
@@ -41,13 +41,19 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { client } = useClient();
   const { weight, loading: weightLoading, error: weightError } = useWeights();
-  const { current: dailySteps } = useDailySteps();
+  const { weekRecords: dailySteps } = useDailySteps();
   const { enriched: wellness } = useWellness();
   const { routine } = useRoutine();
   const { workoutHistory } = useWorkoutHistory();
 
   const workoutsThisWeek = useMemo(
-    () => (client ? countWorkoutsInWeek(workoutHistory, client.week) : 0),
+    () =>
+      client
+        ? countWorkoutsInWeek(workoutHistory, client.week, {
+            startDate: client.startDate,
+            endDate: client.endDate,
+          })
+        : 0,
     [client, workoutHistory],
   );
 
@@ -67,7 +73,7 @@ export default function DashboardScreen() {
 
   if (!client) return null;
 
-  const programProgress = client.week / client.totalWeeks;
+  const programProgress = getProgramProgress(client.startDate, client.endDate);
   const latestWeight = weight ? getLatestWeightValue(weight) : null;
   const weightDelta =
     weight && latestWeight != null

@@ -8,6 +8,7 @@ import { IconBadge } from '@/components/ui/icon-badge';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { WorkoutHistoryEntry } from '@/types/workout-history';
+import { formatWorkoutHistoryDate } from '@/types/workout-history';
 
 type WorkoutHistoryCardProps = {
   entry: WorkoutHistoryEntry;
@@ -40,7 +41,7 @@ export function WorkoutHistoryCard({ entry, onPress, compact = false }: WorkoutH
             {entry.day} · {entry.focus}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {entry.date} · {entry.duration}
+            {formatWorkoutHistoryDate(entry.date)} · {entry.duration}
           </ThemedText>
         </View>
         {onPress && <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />}

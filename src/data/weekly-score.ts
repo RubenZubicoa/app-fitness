@@ -26,9 +26,10 @@ export function scoreFromWorkouts(completed: number, planned: number): number {
 }
 
 /** Adherencia de pasos (media diaria vs goal, tope 100). */
-export function scoreFromSteps(steps: DailySteps | null): number {
-  if (!steps || steps.goal <= 0 || steps.days.length === 0) return 0;
-  const dayScores = steps.days.map((d) => Math.min(d.value / steps.goal, 1) * 100);
+export function scoreFromSteps(records: DailySteps[]): number {
+  const scored = records.filter((r) => (r.goal ?? 0) > 0);
+  if (scored.length === 0) return 0;
+  const dayScores = scored.map((r) => Math.min(r.steps / (r.goal as number), 1) * 100);
   const avg = dayScores.reduce((a, b) => a + b, 0) / dayScores.length;
   return clampScore(avg);
 }
@@ -61,7 +62,7 @@ export function scoreFromWeight(weight: Weight | null): number {
 export function computeWeeklyScore(input: {
   workoutsCompleted: number;
   workoutsPlanned: number;
-  steps: DailySteps | null;
+  steps: DailySteps[];
   wellness: EnrichedWellness[];
   weight: Weight | null;
 }): WeeklyScore {

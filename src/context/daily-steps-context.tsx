@@ -9,33 +9,36 @@ import {
 } from 'react';
 
 import {
+  createDailySteps as createDailyStepsApi,
   fetchClientDailySteps,
   updateDailySteps as updateDailyStepsApi,
 } from '@/api/daily-steps';
 import { useClient } from '@/context/client-context';
 import {
-  getTodayWeekdayIndex,
-  pickCurrentDailySteps,
+  getWeekDailySteps,
+  pickDailyStepsForDate,
+  resolveStepsGoal,
+  toISODate,
   type DailySteps,
-  type DaySteps,
 } from '@/types/daily-steps';
 
 type DailyStepsContextValue = {
   records: DailySteps[];
-  /** Registro de la semana actual del cliente (o el más reciente). */
+  /** Registro de hoy (si existe). */
   current: DailySteps | null;
+  /** Registros de la semana calendario actual (L–D). */
+  weekRecords: DailySteps[];
   loading: boolean;
   saving: boolean;
   error: string | null;
   refreshDailySteps: () => Promise<void>;
-  /** Guarda los pasos de un día concreto (índice L–D) en un registro semanal. */
-  saveDaySteps: (
-    recordId: string,
-    dayIndex: number,
+  /** Crea o actualiza los pasos de una fecha concreta. */
+  saveStepsForDate: (
+    date: string,
     steps: number,
     shareInCommunity?: boolean,
-  ) => Promise<void>;
-  /** Guarda los pasos del día actual (índice L–D) en la BD. */
+  ) => Promise<DailySteps>;
+  /** Guarda los pasos de hoy. */
   saveTodaySteps: (steps: number, shareInCommunity?: boolean) => Promise<void>;
 };
 
@@ -73,37 +76,61 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   }, [refreshDailySteps]);
 
   const current = useMemo(
-    () => pickCurrentDailySteps(records, client?.week),
-    [records, client?.week],
+    () => pickDailyStepsForDate(records, toISODate()),
+    [records],
   );
 
-  const saveDaySteps = useCallback(
-    async (recordId: string, dayIndex: number, steps: number, shareInCommunity = false) => {
-      const record = records.find((item) => item._id === recordId);
-      if (!record) {
-        throw new Error('No se encontró el registro de pasos');
+  const weekRecords = useMemo(() => getWeekDailySteps(records), [records]);
+
+  const upsertRecord = useCallback((updated: DailySteps) => {
+    setRecords((prev) => {
+      const idx = prev.findIndex((item) => item._id === updated._id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = updated;
+        return next;
+      }
+      const byDate = prev.findIndex((item) => item.date === updated.date);
+      if (byDate >= 0) {
+        const next = [...prev];
+        next[byDate] = updated;
+        return next;
+      }
+      return [...prev, updated];
+    });
+  }, []);
+
+  const saveStepsForDate = useCallback(
+    async (date: string, steps: number, shareInCommunity = false) => {
+      if (!client?._id) {
+        throw new Error('No hay cliente autenticado');
       }
       if (!Number.isFinite(steps) || steps < 0) {
         throw new Error('Introduce un número de pasos válido');
       }
-      if (dayIndex < 0 || dayIndex >= record.days.length) {
-        throw new Error('Día de la semana no válido');
-      }
 
-      const nextDays: DaySteps[] = record.days.map((day, index) =>
-        index === dayIndex ? { ...day, value: Math.round(steps) } : day,
-      );
+      const isoDate = date.slice(0, 10);
+      const existing = pickDailyStepsForDate(records, isoDate);
+      const goal = resolveStepsGoal(existing, records);
 
       setSaving(true);
       setError(null);
       try {
-        const updated = await updateDailyStepsApi(record._id, {
-          days: nextDays,
-          shareInCommunity,
-        });
-        setRecords((prev) =>
-          prev.map((item) => (item._id === updated._id ? updated : item)),
-        );
+        const updated = existing
+          ? await updateDailyStepsApi(existing._id, {
+              steps: Math.round(steps),
+              goal,
+              shareInCommunity,
+            })
+          : await createDailyStepsApi({
+              clientId: client._id,
+              date: isoDate,
+              steps: Math.round(steps),
+              goal,
+              shareInCommunity,
+            });
+        upsertRecord(updated);
+        return updated;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'No se pudieron guardar los pasos');
         throw err;
@@ -111,31 +138,39 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
         setSaving(false);
       }
     },
-    [records],
+    [client?._id, records, upsertRecord],
   );
 
   const saveTodaySteps = useCallback(
     async (steps: number, shareInCommunity = false) => {
-      if (!current) {
-        throw new Error('No hay registro de pasos para esta semana');
-      }
-      await saveDaySteps(current._id, getTodayWeekdayIndex(), steps, shareInCommunity);
+      await saveStepsForDate(toISODate(), steps, shareInCommunity);
     },
-    [current, saveDaySteps],
+    [saveStepsForDate],
   );
 
   const value = useMemo<DailyStepsContextValue>(
     () => ({
       records,
       current,
+      weekRecords,
       loading,
       saving,
       error,
       refreshDailySteps,
-      saveDaySteps,
+      saveStepsForDate,
       saveTodaySteps,
     }),
-    [records, current, loading, saving, error, refreshDailySteps, saveDaySteps, saveTodaySteps],
+    [
+      records,
+      current,
+      weekRecords,
+      loading,
+      saving,
+      error,
+      refreshDailySteps,
+      saveStepsForDate,
+      saveTodaySteps,
+    ],
   );
 
   return <DailyStepsContext.Provider value={value}>{children}</DailyStepsContext.Provider>;

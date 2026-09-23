@@ -2,7 +2,6 @@ import { apiRequest } from '@/api/http';
 import {
   normalizeDailySteps,
   type DailySteps,
-  type DaySteps,
 } from '@/types/daily-steps';
 import {
   normalizeStepsRankingEntry,
@@ -25,10 +24,36 @@ export async function fetchStepsRanking(period: 'week' | 'month'): Promise<Steps
   return raw.map((item) => normalizeStepsRankingEntry(item as Record<string, unknown>));
 }
 
+export type CreateDailyStepsPayload = {
+  clientId: string;
+  date: string;
+  steps: number;
+  goal?: number;
+  shareInCommunity?: boolean;
+};
+
+/** Crea registro diario: POST /api/daily-steps */
+export async function createDailySteps(
+  payload: CreateDailyStepsPayload,
+): Promise<DailySteps> {
+  const raw = await apiRequest<Record<string, unknown>>('/api/daily-steps', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeDailySteps(raw);
+}
+
+export type UpdateDailyStepsPayload = {
+  steps?: number;
+  goal?: number;
+  date?: string;
+  shareInCommunity?: boolean;
+};
+
 /** Actualiza registro de pasos: PUT /api/daily-steps/:id */
 export async function updateDailySteps(
   id: string,
-  payload: { days?: DaySteps[]; goal?: number; week?: number; shareInCommunity?: boolean },
+  payload: UpdateDailyStepsPayload,
 ): Promise<DailySteps> {
   const raw = await apiRequest<Record<string, unknown>>(
     `/api/daily-steps/${encodeURIComponent(id)}`,

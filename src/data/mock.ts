@@ -111,7 +111,7 @@ export const socialFeed: SocialFeedEntry[] = [
     comments: 1,
     kind: 'steps',
     dailyStepsId: 'ds-demo-1',
-    week: 8,
+    date: new Date().toISOString().slice(0, 10),
     dayLabel: 'Vie',
     steps: 12400,
     goal: 10000,

@@ -75,10 +75,13 @@ export type SocialFeedMeasurement = SocialFeedBase & {
 export type SocialFeedSteps = SocialFeedBase & {
   kind: 'steps';
   dailyStepsId: string;
-  week: number;
+  /** Fecha ISO YYYY-MM-DD cuando está disponible. */
+  date?: string;
   dayLabel: string;
   steps: number;
   goal: number;
+  /** @deprecated Preferir `date`. */
+  week?: number;
 };
 
 /** Bienestar → varios Wellness del mismo registro/día */
@@ -182,7 +185,11 @@ export function socialFeedDetail(entry: SocialFeedEntry): string {
     case 'measurement':
       return `${entry.label}: ${entry.value} ${entry.unit} (Δ ${entry.delta > 0 ? '+' : ''}${entry.delta})`;
     case 'steps':
-      return `Objetivo ${entry.goal.toLocaleString('es-ES')} · ${entry.dayLabel} · Semana ${entry.week}`;
+      return entry.date
+        ? `Objetivo ${entry.goal.toLocaleString('es-ES')} · ${entry.dayLabel} · ${entry.date}`
+        : entry.week
+          ? `Objetivo ${entry.goal.toLocaleString('es-ES')} · ${entry.dayLabel} · Semana ${entry.week}`
+          : `Objetivo ${entry.goal.toLocaleString('es-ES')} · ${entry.dayLabel}`;
     case 'wellness':
       return entry.items.map((i) => `${i.label} ${i.value}/10`).join(' · ');
     case 'photos':
@@ -297,8 +304,8 @@ export function createStepsFeedEntry(input: {
   _id: string;
   author: SocialFeedAuthor;
   dailySteps: DailySteps;
-  dayLabel: string;
-  steps: number;
+  dayLabel?: string;
+  steps?: number;
   createdAt?: string;
   likes?: number;
   comments?: number;
@@ -312,10 +319,10 @@ export function createStepsFeedEntry(input: {
     comments: input.comments ?? 0,
     kind: 'steps',
     dailyStepsId: input.dailySteps._id,
-    week: input.dailySteps.week,
-    dayLabel: input.dayLabel,
-    steps: input.steps,
-    goal: input.dailySteps.goal,
+    date: input.dailySteps.date,
+    dayLabel: input.dayLabel ?? input.dailySteps.date,
+    steps: input.steps ?? input.dailySteps.steps,
+    goal: input.dailySteps.goal ?? 0,
   };
 }
 
@@ -449,7 +456,8 @@ export function normalizeSocialFeedEntry(raw: Record<string, unknown>): SocialFe
         ...base,
         kind,
         dailyStepsId: normalizeId(raw.dailyStepsId),
-        week: Number(raw.week ?? 0),
+        date: raw.date != null ? String(raw.date).slice(0, 10) : undefined,
+        week: raw.week != null ? Number(raw.week) : undefined,
         dayLabel: String(raw.dayLabel ?? ''),
         steps: Number(raw.steps ?? 0),
         goal: Number(raw.goal ?? 0),

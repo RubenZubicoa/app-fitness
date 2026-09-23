@@ -49,6 +49,30 @@ export function getDaysLeft(endDate: string, from: Date = new Date()): number {
 }
 
 /**
+ * Progreso del plan (0–1) según startDate → endDate.
+ * 0 antes del inicio, 1 al alcanzar o superar la fecha de fin.
+ */
+export function getProgramProgress(
+  startDate: string,
+  endDate: string,
+  from: Date = new Date(),
+): number {
+  const start = parseDay(startDate);
+  const end = parseDay(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return 0;
+  }
+
+  const today = startOfDay(from);
+  if (today <= start) return 0;
+  if (today >= end) return 1;
+
+  const totalMs = end.getTime() - start.getTime();
+  const elapsedMs = today.getTime() - start.getTime();
+  return Math.max(0, Math.min(1, elapsedMs / totalMs));
+}
+
+/**
  * Semanas totales del proceso según el intervalo start→end.
  * Ej.: 84 días → 12 semanas.
  */
