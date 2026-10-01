@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -428,6 +428,17 @@ export default function NutricionScreen() {
                   {s.dose}
                 </ThemedText>
                 <Badge label={s.when} tone="primary" />
+                {s.purchaseLink ? (
+                  <Pressable
+                    onPress={() => {
+                      void Linking.openURL(s.purchaseLink!);
+                    }}
+                    accessibilityRole="link">
+                    <ThemedText type="caption" themeColor="primary" style={styles.buyLink}>
+                      Ver producto
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
               </Card>
             ))}
           </View>
@@ -580,5 +591,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     gap: Spacing.one,
+  },
+  buyLink: {
+    marginTop: Spacing.one,
+    textDecorationLine: 'underline',
   },
 });

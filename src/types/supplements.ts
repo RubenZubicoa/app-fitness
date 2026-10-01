@@ -9,6 +9,8 @@ export type SupplementElement = {
   dose: string;
   when: string;
   icon: IoniconName;
+  /** Enlace opcional sugerido por el entrenador para comprar el producto. */
+  purchaseLink?: string;
 };
 
 export type Supplements = {
@@ -34,6 +36,9 @@ export function normalizeSupplements(raw: Record<string, unknown>): Supplements 
       dose: String(item.dose ?? ''),
       when: String(item.when ?? ''),
       icon: asIonicon(item.icon),
+      ...(String(item.purchaseLink ?? '').trim()
+        ? { purchaseLink: String(item.purchaseLink).trim() }
+        : {}),
     };
   });
 
