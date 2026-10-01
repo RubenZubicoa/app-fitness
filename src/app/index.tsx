@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -116,6 +116,7 @@ export default function LoginScreen() {
               disabled={loading}
             />
 
+            {/* Oculto de momento: acceso al onboarding
             <View style={styles.divider}>
               <View style={styles.line} />
               <ThemedText type="caption" themeColor="textMuted">
@@ -127,6 +128,7 @@ export default function LoginScreen() {
             <Link href="/onboarding" asChild>
               <Button title="Empezar mi proceso" variant="secondary" icon="sparkles-outline" />
             </Link>
+            */}
           </View>
 
           <ThemedText type="small" style={styles.footer}>
