@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useCallback } from 'react';
-import { Alert, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
+import { useCallback, useState } from 'react';
+import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,17 +14,12 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useMacros } from '@/context/macros-context';
-import { useShoppingList } from '@/context/shopping-list-context';
 import { useMeals } from '@/context/meal-context';
+import { useShoppingList } from '@/context/shopping-list-context';
 import { useSupplements } from '@/context/supplements-context';
 import { getCurrentPhase } from '@/data/program';
 import { useTheme } from '@/hooks/use-theme';
-
-const toneMap = {
-  primary: 'primary',
-  gold: 'gold',
-  teal: 'teal',
-} as const;
+import type { SupplementElement } from '@/types/supplements';
 
 export default function NutricionScreen() {
   const theme = useTheme();
@@ -94,6 +89,45 @@ export default function NutricionScreen() {
     setNewQty('');
   };
 
+  const openPurchaseLink = useCallback(async (url: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      await openBrowserAsync(url, {
+        presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+      });
+    } catch {
+      Alert.alert('Error', 'No se pudo abrir el enlace de compra.');
+    }
+  }, []);
+
+  const renderSupplementCard = (supplement: SupplementElement) => {
+    const card = (
+      <Card style={styles.supCard}>
+        <IconBadge name={supplement.icon} color={theme.primary} background={theme.primarySoft} />
+        <ThemedText type="smallBold">{supplement.name}</ThemedText>
+        <ThemedText type="caption" themeColor="textMuted">
+          {supplement.dose}
+        </ThemedText>
+        <Badge label={supplement.when} tone="primary" />
+      </Card>
+    );
+
+    if (!supplement.purchaseLink) {
+      return card;
+    }
+
+    return (
+      <Pressable
+        style={({ pressed }) => pressed && styles.pressed}
+        onPress={() => void openPurchaseLink(supplement.purchaseLink!)}>
+        {card}
+      </Pressable>
+    );
+  };
+
   return (
     <Screen
       header={
@@ -137,35 +171,6 @@ export default function NutricionScreen() {
                   </ThemedText>
                   <Badge label={`Fase ${phase.id} · Semana ${client.week}`} tone="gold" />
                 </View>
-              </View>
-              <View style={styles.macrosRow}>
-                {macros.items.map((m) => {
-                  const toneKey = (m.tone in toneMap ? m.tone : 'primary') as keyof typeof toneMap;
-                  const tone = toneMap[toneKey];
-                  const color = theme[tone];
-                  const pct = m.target > 0 ? m.grams / m.target : 0;
-                  return (
-                    <View key={m.key} style={styles.macroItem}>
-                      <ProgressRing
-                        progress={pct}
-                        size={72}
-                        strokeWidth={7}
-                        colors={[color, color]}>
-                        <ThemedText type="smallBold" style={styles.macroPct}>
-                          {Math.round(pct * 100)}%
-                        </ThemedText>
-                      </ProgressRing>
-                      <View style={styles.macroMeta}>
-                        <ThemedText type="smallBold" style={styles.macroLabel} numberOfLines={2}>
-                          {m.shortLabel}
-                        </ThemedText>
-                        <ThemedText type="caption" themeColor="textMuted" style={styles.macroTarget}>
-                          {m.grams} / {m.target} g
-                        </ThemedText>
-                      </View>
-                    </View>
-                  );
-                })}
               </View>
             </>
           )}
@@ -421,25 +426,9 @@ export default function NutricionScreen() {
         ) : (
           <View style={styles.supplements}>
             {supplements.elements.map((s) => (
-              <Card key={s.name} style={styles.supCard}>
-                <IconBadge name={s.icon} color={theme.primary} background={theme.primarySoft} />
-                <ThemedText type="smallBold">{s.name}</ThemedText>
-                <ThemedText type="caption" themeColor="textMuted">
-                  {s.dose}
-                </ThemedText>
-                <Badge label={s.when} tone="primary" />
-                {s.purchaseLink ? (
-                  <Pressable
-                    onPress={() => {
-                      void Linking.openURL(s.purchaseLink!);
-                    }}
-                    accessibilityRole="link">
-                    <ThemedText type="caption" themeColor="primary" style={styles.buyLink}>
-                      Ver producto
-                    </ThemedText>
-                  </Pressable>
-                ) : null}
-              </Card>
+              <View key={s.name} style={styles.supCardWrap}>
+                {renderSupplementCard(s)}
+              </View>
             ))}
           </View>
         )}
@@ -453,7 +442,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
-    marginBottom: Spacing.four,
   },
   calorieGoal: {
     alignItems: 'center',
@@ -466,32 +454,6 @@ const styles = StyleSheet.create({
   macroInfo: {
     flex: 1,
     gap: Spacing.one,
-  },
-  macrosRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  macroItem: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  macroMeta: {
-    alignItems: 'center',
-    gap: 2,
-    width: '100%',
-  },
-  macroLabel: {
-    textAlign: 'center',
-    fontSize: 12,
-  },
-  macroTarget: {
-    textAlign: 'center',
-  },
-  macroPct: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   meals: { gap: Spacing.two },
   mealCard: { paddingVertical: Spacing.two + 4 },
@@ -586,9 +548,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.three,
   },
-  supCard: {
+  supCardWrap: {
     width: '47%',
     flexGrow: 1,
+  },
+  supCard: {
     alignItems: 'center',
     gap: Spacing.one,
   },

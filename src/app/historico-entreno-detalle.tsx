@@ -13,6 +13,7 @@ import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useWorkoutHistory } from '@/context/workout-history-context';
 import { useTheme } from '@/hooks/use-theme';
 import type { ExerciseLog } from '@/types/workout-history';
+import { formatWorkoutHistoryDate } from '@/types/workout-history';
 
 function confirmAction(title: string, message: string, onConfirm: () => void) {
   if (Platform.OS === 'web') {
@@ -111,7 +112,7 @@ export default function HistoricoEntrenoDetalleScreen() {
       withTabBar={false}
       header={
         <GradientHeader
-          eyebrow={`Semana ${entry.week} · ${entry.date}`}
+          eyebrow={`Semana ${entry.week} · ${formatWorkoutHistoryDate(entry.date)}`}
           title={`${entry.day} · ${entry.focus}`}
           subtitle={`Duración ${entry.duration} · ${entry.exercises.length} ejercicios`}
           showBack
@@ -217,7 +218,16 @@ function ExerciseLogCard({
       {isCardio && exercise.cardio ? (
         <View style={styles.cardioRow}>
           <Metric label="Distancia" value={`${exercise.cardio.km}`} unit="km" />
-          <Metric label="Velocidad" value={`${exercise.cardio.speedKmh}`} unit="km/h" />
+          <Metric
+            label="Duración"
+            value={`${exercise.cardio.durationMinutes}`}
+            unit="min"
+          />
+          <Metric
+            label="Ritmo medio"
+            value={exercise.cardio.paceMinKm || '—'}
+            unit="min/km"
+          />
           <Metric label="FC media" value={`${exercise.cardio.avgHr}`} unit="ppm" />
         </View>
       ) : (

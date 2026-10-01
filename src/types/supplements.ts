@@ -9,7 +9,6 @@ export type SupplementElement = {
   dose: string;
   when: string;
   icon: IoniconName;
-  /** Enlace opcional sugerido por el entrenador para comprar el producto. */
   purchaseLink?: string;
 };
 
@@ -31,14 +30,17 @@ export function normalizeSupplements(raw: Record<string, unknown>): Supplements 
   const elementsRaw = Array.isArray(raw.elements) ? raw.elements : [];
   const elements: SupplementElement[] = elementsRaw.map((entry) => {
     const item = (entry ?? {}) as Record<string, unknown>;
+    const purchaseLink =
+      typeof item.purchaseLink === 'string' && item.purchaseLink.trim()
+        ? item.purchaseLink.trim()
+        : undefined;
+
     return {
       name: String(item.name ?? ''),
       dose: String(item.dose ?? ''),
       when: String(item.when ?? ''),
       icon: asIonicon(item.icon),
-      ...(String(item.purchaseLink ?? '').trim()
-        ? { purchaseLink: String(item.purchaseLink).trim() }
-        : {}),
+      ...(purchaseLink ? { purchaseLink } : {}),
     };
   });
 

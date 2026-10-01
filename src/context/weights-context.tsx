@@ -8,15 +8,22 @@ import {
   type ReactNode,
 } from 'react';
 
-import { fetchClientWeight } from '@/api/weights';
+import {
+  deleteWeightEntryAtIndex,
+  fetchClientWeight,
+  updateWeightEntryAtIndex,
+} from '@/api/weights';
 import { useClient } from '@/context/client-context';
 import type { Weight } from '@/types/weight';
 
 type WeightsContextValue = {
   weight: Weight | null;
   loading: boolean;
+  saving: boolean;
   error: string | null;
   refreshWeight: () => Promise<void>;
+  updateWeightEntry: (index: number, value: number, date?: string) => Promise<void>;
+  deleteWeightEntry: (index: number) => Promise<void>;
 };
 
 const WeightsContext = createContext<WeightsContextValue | undefined>(undefined);
@@ -25,6 +32,7 @@ export function WeightsProvider({ children }: { children: ReactNode }) {
   const { client } = useClient();
   const [weight, setWeight] = useState<Weight | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshWeight = useCallback(async () => {
@@ -51,14 +59,58 @@ export function WeightsProvider({ children }: { children: ReactNode }) {
     void refreshWeight();
   }, [refreshWeight]);
 
+  const updateWeightEntry = useCallback(
+    async (index: number, value: number, date?: string) => {
+      if (!weight) throw new Error('No hay serie de peso');
+      setSaving(true);
+      setError(null);
+      try {
+        const updated = await updateWeightEntryAtIndex({
+          existing: weight,
+          index,
+          value,
+          date,
+        });
+        setWeight(updated);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo actualizar el peso');
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [weight],
+  );
+
+  const deleteWeightEntry = useCallback(
+    async (index: number) => {
+      if (!weight) throw new Error('No hay serie de peso');
+      setSaving(true);
+      setError(null);
+      try {
+        const updated = await deleteWeightEntryAtIndex({ existing: weight, index });
+        setWeight(updated);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo eliminar el peso');
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [weight],
+  );
+
   const value = useMemo<WeightsContextValue>(
     () => ({
       weight,
       loading,
+      saving,
       error,
       refreshWeight,
+      updateWeightEntry,
+      deleteWeightEntry,
     }),
-    [weight, loading, error, refreshWeight],
+    [weight, loading, saving, error, refreshWeight, updateWeightEntry, deleteWeightEntry],
   );
 
   return <WeightsContext.Provider value={value}>{children}</WeightsContext.Provider>;

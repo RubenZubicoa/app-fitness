@@ -15,6 +15,7 @@ import { ShoppingListProvider } from '@/context/shopping-list-context';
 import { MealProvider } from '@/context/meal-context';
 import { SocialFeedProvider } from '@/context/social-feed-context';
 import { SupplementsProvider } from '@/context/supplements-context';
+import { VideoLibraryProvider } from '@/context/video-library-context';
 import { WeightsProvider } from '@/context/weights-context';
 import { WellnessProvider } from '@/context/wellness-context';
 import { WorkoutHistoryProvider } from '@/context/workout-history-context';
@@ -55,8 +56,11 @@ function RootNavigator() {
         <Stack.Screen name="home" />
         <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="anadir-registro" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="gestionar-progreso" />
+        <Stack.Screen name="datos-personales" />
         <Stack.Screen name="historico-entreno" />
         <Stack.Screen name="historico-entreno-detalle" />
+        <Stack.Screen name="historico-pasos" />
         <Stack.Screen name="revisiones" />
         <Stack.Screen name="videoteca" />
         <Stack.Screen name="social" />
@@ -81,6 +85,7 @@ export default function RootLayout() {
                       <MacrosProvider>
                         <MealProvider>
                         <SupplementsProvider>
+                          <VideoLibraryProvider>
                           <RoutineProvider>
                             <WorkoutHistoryProvider>
                               <SocialFeedProvider>
@@ -88,6 +93,7 @@ export default function RootLayout() {
                               </SocialFeedProvider>
                             </WorkoutHistoryProvider>
                           </RoutineProvider>
+                          </VideoLibraryProvider>
                         </SupplementsProvider>
                         </MealProvider>
                       </MacrosProvider>

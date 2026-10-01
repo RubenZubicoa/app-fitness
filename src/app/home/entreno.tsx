@@ -37,7 +37,15 @@ export default function EntrenoScreen() {
   if (!client) return null;
 
   const plannedPerWeek = routine.length;
-  const completed = countWorkoutsInWeek(workoutHistory, client.week);
+  const planRange = {
+    startDate: client.startDate,
+    endDate: client.endDate,
+  };
+  const completed = countWorkoutsInWeek(
+    workoutHistory,
+    client.week,
+    planRange,
+  );
   const adherence =
     plannedPerWeek > 0
       ? Math.max(0, Math.min(100, Math.round((completed / plannedPerWeek) * 100)))
@@ -46,8 +54,13 @@ export default function EntrenoScreen() {
     workoutHistory,
     plannedPerWeek,
     client.week,
+    { ...planRange, totalWeeks: client.totalWeeks },
   );
-  const workoutWeek = computeWorkoutWeek(workoutHistory, client.week);
+  const workoutWeek = computeWorkoutWeek(
+    workoutHistory,
+    client.week,
+    planRange,
+  );
   const phase = getCurrentPhase(client.phase);
 
   return (
@@ -103,7 +116,7 @@ export default function EntrenoScreen() {
       </View>
 
       <View>
-        <SectionHeader title="Rutina actual" actionLabel="Ver explicación" />
+        <SectionHeader title="Rutina actual" />
         {routineLoading ? (
           <Card>
             <ThemedText type="body" themeColor="textSecondary">

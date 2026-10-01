@@ -8,10 +8,13 @@ import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggle';
 import { Brand, Radius, Spacing } from '@/constants/theme';
-import { useClient } from '@/context/client-context';
 import { useDailySteps } from '@/context/daily-steps-context';
 import { useTheme } from '@/hooks/use-theme';
-import { getTodayWeekdayIndex } from '@/types/daily-steps';
+import {
+  buildCurrentWeekBars,
+  resolveStepsGoal,
+  toISODate,
+} from '@/types/daily-steps';
 
 function formatSteps(value: number) {
   return value.toLocaleString('es-ES');
@@ -20,44 +23,45 @@ function formatSteps(value: number) {
 /** Tarjeta de pasos diarios con registro y gráfico semanal. */
 export function DailyStepsCard() {
   const theme = useTheme();
-  const { client } = useClient();
-  const { current: steps, loading, saving, error, saveTodaySteps } = useDailySteps();
-  const todayIndex = getTodayWeekdayIndex();
-  const weekLabel = client?.week ?? steps?.week ?? '—';
+  const {
+    records,
+    current,
+    loading,
+    saving,
+    error,
+    saveTodaySteps,
+  } = useDailySteps();
 
-  const [weekValues, setWeekValues] = useState<number[]>([]);
+  const weekBars = useMemo(() => buildCurrentWeekBars(records), [records]);
+  const todayIso = toISODate();
+  const goal = resolveStepsGoal(current, records);
+
   const [input, setInput] = useState('');
   const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!steps) {
-      setWeekValues([]);
-      setInput('');
-      return;
-    }
-    const values = steps.days.map((d) => d.value);
-    setWeekValues(values);
-    const today = values[todayIndex] ?? 0;
+    const today = current?.steps ?? 0;
     setInput(today > 0 ? String(today) : '');
-  }, [steps, todayIndex]);
+  }, [current]);
 
-  const todaySteps = weekValues[todayIndex] ?? 0;
-  const goal = steps?.goal ?? 0;
+  const todaySteps = current?.steps ?? 0;
   const progress = goal > 0 ? Math.min(todaySteps / goal, 1) : 0;
   const goalReached = goal > 0 && todaySteps >= goal;
 
   const chartData: BarDatum[] = useMemo(
     () =>
-      (steps?.days ?? []).map((day, i) => ({
+      weekBars.map((day) => ({
         label: day.label,
-        value: weekValues[i] ?? 0,
-        highlight: true,
+        value: day.value,
+        highlight: day.date === todayIso,
       })),
-    [steps?.days, weekValues],
+    [weekBars, todayIso],
   );
 
+  const weekValues = weekBars.map((d) => d.value);
   const chartMax = Math.max(goal, ...weekValues, 1);
+  const daysWithSteps = weekValues.filter((v) => v > 0).length;
 
   const registerSteps = async () => {
     const parsed = Number(input.replace(/\D/g, ''));
@@ -66,11 +70,6 @@ export function DailyStepsCard() {
     setSaveError(null);
     try {
       await saveTodaySteps(parsed, shareInCommunity);
-      setWeekValues((prev) => {
-        const next = [...prev];
-        next[todayIndex] = parsed;
-        return next;
-      });
       setInput(String(parsed));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'No se pudieron guardar los pasos');
@@ -87,21 +86,11 @@ export function DailyStepsCard() {
     );
   }
 
-  if (error) {
+  if (error && records.length === 0) {
     return (
       <Card style={styles.card}>
         <ThemedText type="body" themeColor="textSecondary">
           {error}
-        </ThemedText>
-      </Card>
-    );
-  }
-
-  if (!steps) {
-    return (
-      <Card style={styles.card}>
-        <ThemedText type="body" themeColor="textSecondary">
-          Aún no hay registros de pasos.
         </ThemedText>
       </Card>
     );
@@ -114,7 +103,7 @@ export function DailyStepsCard() {
         <View style={styles.headerInfo}>
           <ThemedText type="h3">{formatSteps(todaySteps)} pasos</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Hoy · semana {weekLabel} · objetivo {formatSteps(goal)}
+            Hoy · objetivo {formatSteps(goal)}
           </ThemedText>
         </View>
         <Badge
@@ -188,15 +177,14 @@ export function DailyStepsCard() {
 
       <View style={styles.chartHeader}>
         <ThemedText type="label" themeColor="textMuted">
-          Semana {weekLabel}
+          Esta semana
         </ThemedText>
         <ThemedText type="caption" themeColor="textSecondary">
           Media{' '}
           {formatSteps(
-            Math.round(
-              weekValues.reduce((a, b) => a + b, 0) /
-                (weekValues.filter((v) => v > 0).length || 1),
-            ),
+            daysWithSteps > 0
+              ? Math.round(weekValues.reduce((a, b) => a + b, 0) / daysWithSteps)
+              : 0,
           )}
         </ThemedText>
       </View>

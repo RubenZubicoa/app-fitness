@@ -37,8 +37,9 @@ type StrengthSetDraft = {
 
 type CardioDraft = {
   km: string;
-  speedKmh: string;
+  paceMinKm: string;
   avgHr: string;
+  durationMinutes: string;
 };
 
 type ExerciseDraft = {
@@ -55,27 +56,22 @@ function formatTime(total: number) {
 }
 
 function formatSessionDate(date = new Date()): string {
-  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const months = [
-    'ene',
-    'feb',
-    'mar',
-    'abr',
-    'may',
-    'jun',
-    'jul',
-    'ago',
-    'sep',
-    'oct',
-    'nov',
-    'dic',
-  ];
-  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function parseNumber(value: string, fallback = 0): number {
   const n = Number(String(value).replace(',', '.'));
   return Number.isFinite(n) ? n : fallback;
+}
+
+function parseDurationMinutes(duration: string, fallback = 45): number {
+  const match = duration.match(/(\d+)/);
+  if (!match) return fallback;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function buildInitialDrafts(exercises: Exercise[]): Record<string, ExerciseDraft> {
@@ -85,8 +81,9 @@ function buildInitialDrafts(exercises: Exercise[]): Record<string, ExerciseDraft
       drafts[exercise.name] = {
         cardio: {
           km: exercise.targetKm ? String(exercise.targetKm) : '',
-          speedKmh: '',
+          paceMinKm: '',
           avgHr: '',
+          durationMinutes: '',
         },
       };
     } else {
@@ -114,8 +111,9 @@ function draftsToExerciseLogs(
         type: 'cardio',
         cardio: {
           km: parseNumber(draft?.cardio?.km ?? ''),
-          speedKmh: parseNumber(draft?.cardio?.speedKmh ?? ''),
+          paceMinKm: String(draft?.cardio?.paceMinKm ?? '').trim(),
           avgHr: parseNumber(draft?.cardio?.avgHr ?? ''),
+          durationMinutes: parseNumber(draft?.cardio?.durationMinutes ?? ''),
         },
       };
     }
@@ -144,7 +142,6 @@ export default function SesionEntrenoScreen() {
   const { createWorkout, saving } = useWorkoutHistory();
   const session = routine[dayIndex] ?? routine[0];
 
-  const [started, setStarted] = useState(false);
   const [running, setRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, ExerciseDraft>>({});
@@ -154,10 +151,17 @@ export default function SesionEntrenoScreen() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionId = session?._id ?? '';
 
+  const hasStrengthExercises = useMemo(
+    () => session?.exercises.some((ex) => ex.type === 'strength') ?? false,
+    [session],
+  );
+
   useEffect(() => {
     if (!session) return;
     setDrafts(buildInitialDrafts(session.exercises));
     setSaveError(null);
+    setRunning(false);
+    setSeconds(0);
   }, [sessionId]);
 
   useEffect(() => {
@@ -169,15 +173,15 @@ export default function SesionEntrenoScreen() {
     };
   }, [running]);
 
-  const start = () => {
-    setStarted(true);
-    setRunning(true);
+  const resetRestTimer = () => {
+    setRunning(false);
+    setSeconds(0);
   };
 
   const totalSeries = useMemo(
     () =>
       session?.exercises.reduce(
-        (acc, ex) => acc + (ex.type === 'strength' ? ex.seriesCount ?? 0 : 1),
+        (acc, ex) => acc + (ex.type === 'strength' ? ex.seriesCount ?? 0 : 0),
         0,
       ) ?? 0,
     [session],
@@ -208,8 +212,9 @@ export default function SesionEntrenoScreen() {
         ...prev[exerciseName],
         cardio: {
           km: prev[exerciseName]?.cardio?.km ?? '',
-          speedKmh: prev[exerciseName]?.cardio?.speedKmh ?? '',
+          paceMinKm: prev[exerciseName]?.cardio?.paceMinKm ?? '',
           avgHr: prev[exerciseName]?.cardio?.avgHr ?? '',
+          durationMinutes: prev[exerciseName]?.cardio?.durationMinutes ?? '',
           [field]: value,
         },
       },
@@ -264,8 +269,14 @@ export default function SesionEntrenoScreen() {
     setRunning(false);
     setSaveError(null);
 
-    const durationMinutes = Math.max(1, Math.round(seconds / 60) || 1);
     const exercises = draftsToExerciseLogs(session.exercises, drafts);
+    const cardioDurationTotal = exercises
+      .filter((ex) => ex.type === 'cardio')
+      .reduce((sum, ex) => sum + (ex.cardio?.durationMinutes ?? 0), 0);
+    const durationMinutes =
+      cardioDurationTotal > 0
+        ? Math.max(1, Math.round(cardioDurationTotal))
+        : parseDurationMinutes(session.duration);
 
     try {
       await createWorkout({
@@ -316,32 +327,31 @@ export default function SesionEntrenoScreen() {
           subtitle={`${session.day} · ${session.exercises.length} ejercicios · ${session.duration}`}
           showBack
           gradient={Brand.gradientNavy}>
-          <View style={styles.timerCard}>
-            <View style={styles.timerLeft}>
-              <ThemedText type="label" style={styles.timerLabel}>
-                {started ? (running ? 'En curso' : 'En pausa') : 'Listo para empezar'}
-              </ThemedText>
-              <ThemedText type="display" style={styles.timerValue}>
-                {formatTime(seconds)}
-              </ThemedText>
-              <ThemedText type="caption" style={styles.timerSub}>
-                {session.exercises.length} ejercicios · {totalSeries} series
-              </ThemedText>
-            </View>
-            {!started ? (
-              <Pressable style={styles.startBtn} onPress={start}>
-                <Ionicons name="play" size={26} color="#0A1B33" />
-              </Pressable>
-            ) : (
+          {hasStrengthExercises ? (
+            <View style={styles.timerCard}>
+              <View style={styles.timerLeft}>
+                <ThemedText type="label" style={styles.timerLabel}>
+                  {running ? 'Descanso en curso' : seconds > 0 ? 'Descanso en pausa' : 'Temporizador de descanso'}
+                </ThemedText>
+                <ThemedText type="display" style={styles.timerValue}>
+                  {formatTime(seconds)}
+                </ThemedText>
+                <ThemedText type="caption" style={styles.timerSub}>
+                  Solo informativo · {totalSeries} series
+                </ThemedText>
+              </View>
               <View style={styles.timerControls}>
                 <Pressable
                   style={styles.controlBtn}
                   onPress={() => setRunning((r) => !r)}>
                   <Ionicons name={running ? 'pause' : 'play'} size={22} color="#FFFFFF" />
                 </Pressable>
+                <Pressable style={styles.controlBtn} onPress={resetRestTimer}>
+                  <Ionicons name="refresh" size={22} color="#FFFFFF" />
+                </Pressable>
               </View>
-            )}
-          </View>
+            </View>
+          ) : null}
         </GradientHeader>
       }>
       <View style={styles.list}>
@@ -649,7 +659,7 @@ function CardioInputs({
   onChange: (field: keyof CardioDraft, value: string) => void;
 }) {
   const theme = useTheme();
-  const draft = value ?? { km: '', speedKmh: '', avgHr: '' };
+  const draft = value ?? { km: '', paceMinKm: '', avgHr: '', durationMinutes: '' };
 
   const fields = [
     {
@@ -658,13 +668,23 @@ function CardioInputs({
       unit: 'km',
       icon: 'map-outline' as const,
       placeholder: exercise.targetKm ? `${exercise.targetKm}` : '0.0',
+      keyboardType: 'numeric' as const,
     },
     {
-      key: 'speedKmh' as const,
-      label: 'Velocidad',
-      unit: 'km/h',
+      key: 'durationMinutes' as const,
+      label: 'Duración',
+      unit: 'min',
+      icon: 'time-outline' as const,
+      placeholder: '0',
+      keyboardType: 'numeric' as const,
+    },
+    {
+      key: 'paceMinKm' as const,
+      label: 'Ritmo medio',
+      unit: 'min/km',
       icon: 'speedometer-outline' as const,
-      placeholder: '0.0',
+      placeholder: '5:30',
+      keyboardType: 'default' as const,
     },
     {
       key: 'avgHr' as const,
@@ -672,6 +692,7 @@ function CardioInputs({
       unit: 'ppm',
       icon: 'heart-outline' as const,
       placeholder: '0',
+      keyboardType: 'numeric' as const,
     },
   ];
 
@@ -690,7 +711,7 @@ function CardioInputs({
               onChangeText={(text) => onChange(f.key, text)}
               placeholder={f.placeholder}
               placeholderTextColor={theme.textMuted}
-              keyboardType="numeric"
+              keyboardType={f.keyboardType}
             />
             <ThemedText type="caption" themeColor="textSecondary" style={styles.cardioUnit}>
               {f.unit}
@@ -718,14 +739,6 @@ const styles = StyleSheet.create({
   timerLabel: { color: 'rgba(255,255,255,0.75)' },
   timerValue: { color: '#FFFFFF' },
   timerSub: { color: 'rgba(255,255,255,0.75)' },
-  startBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.pill,
-    backgroundColor: Brand.goldLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   timerControls: {
     flexDirection: 'row',
     gap: Spacing.two,

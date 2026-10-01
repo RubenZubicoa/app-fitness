@@ -9,36 +9,6 @@ import type { SocialFeedEntry } from '@/types/social-feed';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export const videoLibrary = [
-  {
-    category: 'Nutrición',
-    icon: 'nutrition-outline',
-    tone: 'gold',
-    items: [
-      { title: 'Cómo montar tu plato', type: 'Vídeo', length: '8 min' },
-      { title: 'Guía de suplementación', type: 'PDF', length: '12 pág' },
-    ],
-  },
-  {
-    category: 'Entrenamiento',
-    icon: 'barbell-outline',
-    tone: 'primary',
-    items: [
-      { title: 'Técnica de sentadilla', type: 'Vídeo', length: '6 min' },
-      { title: 'Calentamiento articular', type: 'Vídeo', length: '5 min' },
-    ],
-  },
-  {
-    category: 'Hábitos y sueño',
-    icon: 'moon-outline',
-    tone: 'purple',
-    items: [
-      { title: 'Higiene del sueño', type: 'Vídeo', length: '10 min' },
-      { title: 'Gestión del estrés', type: 'PDF', length: '6 pág' },
-    ],
-  },
-] as const;
-
 /** Feed demo tipado como SocialFeedEntry (alineado con WorkoutHistory, Weight, Measurement…). */
 export const socialFeed: SocialFeedEntry[] = [
   {
@@ -141,7 +111,7 @@ export const socialFeed: SocialFeedEntry[] = [
     comments: 1,
     kind: 'steps',
     dailyStepsId: 'ds-demo-1',
-    week: 8,
+    date: new Date().toISOString().slice(0, 10),
     dayLabel: 'Vie',
     steps: 12400,
     goal: 10000,

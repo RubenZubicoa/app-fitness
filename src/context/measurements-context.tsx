@@ -8,7 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 
-import { fetchClientMeasurements, fetchMeasurementMasters } from '@/api/measurements';
+import {
+  deleteMeasurement as deleteMeasurementApi,
+  fetchClientMeasurements,
+  fetchMeasurementMasters,
+  updateMeasurement as updateMeasurementApi,
+  type UpdateMeasurementPayload,
+} from '@/api/measurements';
 import { useClient } from '@/context/client-context';
 import {
   buildMeasurementSeries,
@@ -27,10 +33,13 @@ type MeasurementsContextValue = {
   enrichedLatest: EnrichedMeasurement[];
   seriesByMasterId: Record<string, MeasurementSeriesPoint[]>;
   loading: boolean;
+  saving: boolean;
   error: string | null;
   getMasterById: (id: string) => MeasurementMaster | undefined;
   getMasterByKey: (key: string) => MeasurementMaster | undefined;
   refreshMeasurements: () => Promise<void>;
+  updateMeasurement: (id: string, payload: UpdateMeasurementPayload) => Promise<void>;
+  deleteMeasurement: (id: string) => Promise<void>;
 };
 
 const MeasurementsContext = createContext<MeasurementsContextValue | undefined>(undefined);
@@ -40,6 +49,7 @@ export function MeasurementsProvider({ children }: { children: ReactNode }) {
   const [masters, setMasters] = useState<MeasurementMaster[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshMeasurements = useCallback(async () => {
@@ -89,6 +99,34 @@ export function MeasurementsProvider({ children }: { children: ReactNode }) {
 
   const seriesByMasterId = useMemo(() => buildMeasurementSeries(measurements), [measurements]);
 
+  const updateMeasurement = useCallback(async (id: string, payload: UpdateMeasurementPayload) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateMeasurementApi(id, payload);
+      setMeasurements((prev) => prev.map((item) => (item._id === id ? updated : item)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar la medida');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const deleteMeasurement = useCallback(async (id: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await deleteMeasurementApi(id);
+      setMeasurements((prev) => prev.filter((item) => item._id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la medida');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   const value = useMemo<MeasurementsContextValue>(
     () => ({
       masters,
@@ -96,10 +134,13 @@ export function MeasurementsProvider({ children }: { children: ReactNode }) {
       enrichedLatest,
       seriesByMasterId,
       loading,
+      saving,
       error,
       getMasterById,
       getMasterByKey,
       refreshMeasurements,
+      updateMeasurement,
+      deleteMeasurement,
     }),
     [
       masters,
@@ -107,10 +148,13 @@ export function MeasurementsProvider({ children }: { children: ReactNode }) {
       enrichedLatest,
       seriesByMasterId,
       loading,
+      saving,
       error,
       getMasterById,
       getMasterByKey,
       refreshMeasurements,
+      updateMeasurement,
+      deleteMeasurement,
     ],
   );
 
