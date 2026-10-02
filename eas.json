@@ -26,12 +26,23 @@
     },
     "production": {
       "autoIncrement": true,
+      "credentialsSource": "remote",
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "simulator": false
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "rubenzubicoatic@gmail.com",
+        "ascApiKeyPath": "ApiKey_QTOMW48O4DG2.p8",
+        "ascApiKeyId": "QTOMW48O4DG2",
+        "ascApiKeyIssuerId": "f63da438-9daa-4164-87b0-560e22062e41"
+      }
+    }
   }
 }
