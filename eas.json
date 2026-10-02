@@ -38,9 +38,10 @@
   "submit": {
     "production": {
       "ios": {
+         "ascAppId": "6818148402",
         "appleId": "rubenzubicoatic@gmail.com",
-        "ascApiKeyPath": "ApiKey_QTOMW48O4DG2.p8",
-        "ascApiKeyId": "QTOMW48O4DG2",
+        "ascApiKeyPath": "AuthKey_46PT469GH2.p8",
+        "ascApiKeyId": "46PT469GH2",
         "ascApiKeyIssuerId": "f63da438-9daa-4164-87b0-560e22062e41"
       }
     }
