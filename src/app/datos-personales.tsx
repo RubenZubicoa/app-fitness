@@ -23,7 +23,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function DatosPersonalesScreen() {
   const theme = useTheme();
-  const { client, saving, updateClientProfile, logout } = useClient();
+  const { client, saving, updateClientProfile, logout, deleteAccount } = useClient();
 
   const [name, setName] = useState('');
   const [fullName, setFullName] = useState('');
@@ -36,6 +36,7 @@ export default function DatosPersonalesScreen() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!client) return;
@@ -138,6 +139,40 @@ export default function DatosPersonalesScreen() {
     ]);
   };
 
+  const handleDeleteAccount = async () => {
+    setError(null);
+    setSuccess(null);
+    setDeleting(true);
+    try {
+      await deleteAccount();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la cuenta');
+      setDeleting(false);
+    }
+  };
+
+  const busy = saving || deleting;
+
+  const confirmDeleteAccount = () => {
+    const message =
+      'Esta acción es permanente. Se eliminará tu cuenta y no podrás recuperarla.';
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' ? window.confirm(message) : true;
+      if (ok) void handleDeleteAccount();
+      return;
+    }
+    Alert.alert('Eliminar cuenta', message, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => {
+          void handleDeleteAccount();
+        },
+      },
+    ]);
+  };
+
   return (
     <Screen
       withTabBar={false}
@@ -166,7 +201,7 @@ export default function DatosPersonalesScreen() {
             onPress={() => {
               void pickAvatar();
             }}
-            disabled={saving}>
+            disabled={busy}>
             <ThemedText type="link" themeColor="primary">
               Cambiar foto
             </ThemedText>
@@ -182,14 +217,14 @@ export default function DatosPersonalesScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Nombre corto"
-            editable={!saving}
+            editable={!busy}
           />
           <Field
             label="Nombre completo"
             value={fullName}
             onChangeText={setFullName}
             placeholder="Nombre y apellidos"
-            editable={!saving}
+            editable={!busy}
           />
           <Field
             label="Email"
@@ -198,7 +233,7 @@ export default function DatosPersonalesScreen() {
             placeholder="tu@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            editable={!saving}
+            editable={!busy}
           />
           <Field
             label="Teléfono"
@@ -206,14 +241,14 @@ export default function DatosPersonalesScreen() {
             onChangeText={setTelefono}
             placeholder="+34 600 000 000"
             keyboardType="phone-pad"
-            editable={!saving}
+            editable={!busy}
           />
           <Field
             label="Objetivo"
             value={goal}
             onChangeText={setGoal}
             placeholder="Tu objetivo principal"
-            editable={!saving}
+            editable={!busy}
           />
         </Card>
       </View>
@@ -230,7 +265,7 @@ export default function DatosPersonalesScreen() {
             onChangeText={setPassword}
             placeholder="••••••••"
             secureTextEntry
-            editable={!saving}
+            editable={!busy}
           />
           <Field
             label="Confirmar contraseña"
@@ -238,7 +273,7 @@ export default function DatosPersonalesScreen() {
             onChangeText={setPasswordConfirm}
             placeholder="••••••••"
             secureTextEntry
-            editable={!saving}
+            editable={!busy}
           />
         </Card>
       </View>
@@ -260,14 +295,21 @@ export default function DatosPersonalesScreen() {
         onPress={() => {
           void handleSave();
         }}
-        disabled={saving}
+        disabled={busy}
       />
       <Button
         title="Cerrar sesión"
         icon="log-out-outline"
         variant="ghost"
         onPress={confirmLogout}
-        disabled={saving}
+        disabled={busy}
+      />
+      <Button
+        title={deleting ? 'Eliminando…' : 'Eliminar cuenta'}
+        icon="trash-outline"
+        variant="danger"
+        onPress={confirmDeleteAccount}
+        disabled={busy}
       />
     </Screen>
   );

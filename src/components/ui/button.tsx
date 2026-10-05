@@ -8,7 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 type ButtonProps = PressableProps & {
   title: string;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   icon?: keyof typeof Ionicons.glyphMap;
   gradient?: readonly [string, string];
   fullWidth?: boolean;
@@ -26,21 +26,13 @@ export function Button({
 }: ButtonProps) {
   const theme = useTheme();
 
+  const accentColor =
+    variant === 'primary' ? '#0A1B33' : variant === 'danger' ? theme.danger : theme.primary;
+
   const content = (
     <View style={styles.row}>
-      {icon && (
-        <Ionicons
-          name={icon}
-          size={18}
-          color={variant === 'primary' ? '#0A1B33' : theme.primary}
-        />
-      )}
-      <ThemedText
-        type="smallBold"
-        style={[
-          styles.label,
-          { color: variant === 'primary' ? '#0A1B33' : theme.primary },
-        ]}>
+      {icon && <Ionicons name={icon} size={18} color={accentColor} />}
+      <ThemedText type="smallBold" style={[styles.label, { color: accentColor }]}>
         {title}
       </ThemedText>
     </View>
@@ -64,7 +56,9 @@ export function Button({
             styles.base,
             variant === 'secondary'
               ? { backgroundColor: theme.primarySoft }
-              : { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border },
+              : variant === 'danger'
+                ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.danger }
+                : { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border },
           ]}>
           {content}
         </View>

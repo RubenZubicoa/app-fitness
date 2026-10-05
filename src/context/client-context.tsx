@@ -3,6 +3,7 @@ import { Redirect, router } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 import {
+  deleteClient as apiDeleteClient,
   fetchClientById,
   loginClient as apiLogin,
   updateClient as apiUpdateClient,
@@ -18,6 +19,7 @@ type ClientContextValue = {
   saving: boolean;
   login: (email: string, password: string) => Promise<Client>;
   logout: () => void;
+  deleteAccount: () => Promise<void>;
   refreshClient: () => Promise<void>;
   updateClientProfile: (payload: UpdateClientPayload) => Promise<Client>;
   setClient: (client: Client | null) => void;
@@ -55,6 +57,14 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     setClient(fresh);
   }, [client?._id]);
 
+  const deleteAccount = useCallback(async () => {
+    if (!client?._id) {
+      throw new Error('No hay cliente autenticado');
+    }
+    await apiDeleteClient(client._id);
+    logout();
+  }, [client?._id, logout]);
+
   const updateClientProfile = useCallback(
     async (payload: UpdateClientPayload) => {
       if (!client?._id) {
@@ -79,11 +89,12 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       saving,
       login,
       logout,
+      deleteAccount,
       refreshClient,
       updateClientProfile,
       setClient,
     }),
-    [client, saving, login, logout, refreshClient, updateClientProfile],
+    [client, saving, login, logout, deleteAccount, refreshClient, updateClientProfile],
   );
 
   return <ClientContext.Provider value={value}>{children}</ClientContext.Provider>;

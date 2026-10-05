@@ -141,3 +141,12 @@ export async function fetchAllClients(): Promise<Client[]> {
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => normalizeClient(item as Record<string, unknown>));
 }
+
+/** Elimina la cuenta del cliente: DELETE /api/clients/:id */
+export async function deleteClient(id: string): Promise<void> {
+  await apiRequest<void>(
+    `/api/clients/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+    { allowEmpty: true },
+  );
+}
