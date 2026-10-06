@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -17,12 +17,12 @@ import { ThemedText } from '@/components/themed-text';
 import { BrandLogo } from '@/components/ui/brand-logo';
 import { Button } from '@/components/ui/button';
 import { MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
-import { useClient } from '@/context/client-context';
+import { ClientLoadingFallback, useClient } from '@/context/client-context';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login } = useClient();
+  const { client, isRestoring, login } = useClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
@@ -46,6 +46,14 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  if (isRestoring) {
+    return <ClientLoadingFallback />;
+  }
+
+  if (client) {
+    return <Redirect href="/home" />;
+  }
 
   return (
     <LinearGradient colors={['#0B2A5B', '#0A1B33']} style={styles.root}>

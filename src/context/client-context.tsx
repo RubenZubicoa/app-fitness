@@ -9,13 +9,21 @@ import {
   updateClient as apiUpdateClient,
   type UpdateClientPayload,
 } from '@/api/clients';
-import { clearAuthToken, setAuthFailureHandler } from '@/api/http';
+import { clearAuthToken, setAuthFailureHandler, setAuthToken } from '@/api/http';
+import {
+  loadAuthToken,
+  loadClientId,
+  persistAndroidStepsCache,
+  persistClientId,
+} from '@/api/session-store';
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
+import { unregisterDailyStepsBackgroundTask } from '@/services/sync-daily-steps';
 
 type ClientContextValue = {
   client: Client | null;
   isAuthenticated: boolean;
+  isRestoring: boolean;
   saving: boolean;
   login: (email: string, password: string) => Promise<Client>;
   logout: () => void;
@@ -30,15 +38,50 @@ const ClientContext = createContext<ClientContextValue | undefined>(undefined);
 export function ClientProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(true);
+
+  const clearLocalSession = useCallback(() => {
+    clearAuthToken();
+    void persistClientId(null);
+    void persistAndroidStepsCache(null);
+    void unregisterDailyStepsBackgroundTask();
+    setClient(null);
+  }, []);
 
   const logout = useCallback(() => {
-    clearAuthToken();
-    setClient(null);
+    clearLocalSession();
     router.replace('/');
+  }, [clearLocalSession]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const restore = async () => {
+      try {
+        const token = await loadAuthToken();
+        const clientId = await loadClientId();
+        if (!token || !clientId) return;
+        setAuthToken(token);
+        const restored = await fetchClientById(clientId);
+        if (!cancelled) setClient(restored);
+      } catch {
+        // 401 limpia el token en http; si no hay red, el usuario puede volver a entrar.
+      } finally {
+        if (!cancelled) setIsRestoring(false);
+      }
+    };
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     setAuthFailureHandler(() => {
+      void persistClientId(null);
+      void persistAndroidStepsCache(null);
+      void unregisterDailyStepsBackgroundTask();
       setClient(null);
       router.replace('/');
     });
@@ -47,6 +90,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const logged = await apiLogin(email, password);
+    await persistClientId(logged._id);
     setClient(logged);
     return logged;
   }, []);
@@ -86,6 +130,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     () => ({
       client,
       isAuthenticated: client !== null,
+      isRestoring,
       saving,
       login,
       logout,
@@ -94,7 +139,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       updateClientProfile,
       setClient,
     }),
-    [client, saving, login, logout, deleteAccount, refreshClient, updateClientProfile],
+    [client, isRestoring, saving, login, logout, deleteAccount, refreshClient, updateClientProfile],
   );
 
   return <ClientContext.Provider value={value}>{children}</ClientContext.Provider>;
@@ -116,7 +161,11 @@ export function useRequiredClient(): Client | null {
 
 /** Guard de rutas autenticadas. */
 export function RequireClient({ children }: { children: ReactNode }) {
-  const { client } = useClient();
+  const { client, isRestoring } = useClient();
+
+  if (isRestoring) {
+    return <ClientLoadingFallback />;
+  }
 
   if (!client) {
     return <Redirect href="/" />;

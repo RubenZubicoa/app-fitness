@@ -1,4 +1,5 @@
 import { API_URL } from '@/constants/api';
+import { persistAuthToken } from '@/api/session-store';
 
 type ApiErrorBody = { message?: string };
 type AuthFailureHandler = () => void;
@@ -16,10 +17,12 @@ export function setAuthToken(token: string | null): void {
   if (authToken) {
     authFailureNotified = false;
   }
+  void persistAuthToken(authToken);
 }
 
 export function clearAuthToken(): void {
   authToken = null;
+  void persistAuthToken(null);
 }
 
 /** Registra el callback que limpia la sesión y redirige al login. */

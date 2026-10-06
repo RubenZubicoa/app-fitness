@@ -1,11 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { LineChart } from '@/components/charts/line-chart';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { Screen } from '@/components/ui/screen';
@@ -44,7 +42,7 @@ function rangeForPreset(preset: PresetKey): { from: string | null; to: string | 
 
 export default function HistoricoPasosScreen() {
   const theme = useTheme();
-  const { records, loading, saving, error, saveStepsForDate } = useDailySteps();
+  const { records, loading, error } = useDailySteps();
 
   const [preset, setPreset] = useState<PresetKey>('30d');
   const [fromInput, setFromInput] = useState(() => rangeForPreset('30d').from ?? '');
@@ -83,10 +81,6 @@ export default function HistoricoPasosScreen() {
     0,
   );
 
-  const [editingDate, setEditingDate] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [saveError, setSaveError] = useState<string | null>(null);
-
   const todayIso = toISODate();
   const total = listRows.reduce((sum, row) => sum + row.steps, 0);
   const daysWithSteps = listRows.filter((row) => row.steps > 0).length;
@@ -98,35 +92,6 @@ export default function HistoricoPasosScreen() {
       const range = rangeForPreset(key);
       setFromInput(range.from ?? '');
       setToInput(range.to ?? '');
-    }
-    setEditingDate(null);
-    setSaveError(null);
-  };
-
-  const startEdit = (date: string, currentValue: number) => {
-    setEditingDate(date);
-    setEditValue(currentValue > 0 ? String(currentValue) : '');
-    setSaveError(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingDate(null);
-    setEditValue('');
-    setSaveError(null);
-  };
-
-  const saveEdit = async (date: string) => {
-    const parsed = Number(editValue.replace(/\D/g, ''));
-    if (Number.isNaN(parsed) || parsed < 0) {
-      setSaveError('Introduce un número de pasos válido');
-      return;
-    }
-
-    try {
-      await saveStepsForDate(date, parsed);
-      cancelEdit();
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'No se pudieron guardar los pasos');
     }
   };
 
@@ -154,7 +119,7 @@ export default function HistoricoPasosScreen() {
         <GradientHeader
           eyebrow="Actividad diaria"
           title="Histórico de pasos"
-          subtitle="Consulta tu evolución y registra o edita cualquier día"
+          subtitle="Consulta la evolución de tus pasos registrados automáticamente"
           showBack
           gradient={Brand.gradientNavy}
         />
@@ -308,7 +273,6 @@ export default function HistoricoPasosScreen() {
 
                 <View style={styles.daysList}>
                   {listRows.map((row) => {
-                    const isEditing = editingDate === row.date;
                     const isToday = row.date === todayIso;
                     const hasValue = row.steps > 0;
 
@@ -324,100 +288,19 @@ export default function HistoricoPasosScreen() {
                             </ThemedText>
                             {isToday ? <Badge label="Hoy" tone="gold" /> : null}
                           </View>
-                          {!isEditing ? (
-                            <ThemedText type="body" themeColor="textSecondary">
-                              {hasValue
-                                ? `${formatSteps(row.steps)} pasos`
-                                : 'Sin registrar'}
-                              {row.goal != null && row.goal > 0
-                                ? ` · meta ${formatSteps(row.goal)}`
-                                : ''}
-                            </ThemedText>
-                          ) : (
-                            <TextInput
-                              style={[
-                                styles.dayInput,
-                                {
-                                  color: theme.text,
-                                  borderColor: theme.border,
-                                  backgroundColor: theme.backgroundElement,
-                                },
-                              ]}
-                              value={editValue}
-                              onChangeText={setEditValue}
-                              placeholder="Ej. 8500"
-                              placeholderTextColor={theme.textMuted}
-                              keyboardType="number-pad"
-                              editable={!saving}
-                              autoFocus
-                            />
-                          )}
+                          <ThemedText type="body" themeColor="textSecondary">
+                            {hasValue
+                              ? `${formatSteps(row.steps)} pasos`
+                              : 'Sin registrar'}
+                            {row.goal != null && row.goal > 0
+                              ? ` · meta ${formatSteps(row.goal)}`
+                              : ''}
+                          </ThemedText>
                         </View>
-
-                        {!isEditing ? (
-                          <Pressable
-                            style={({ pressed }) => [
-                              styles.editBtn,
-                              { backgroundColor: theme.primarySoft },
-                              pressed && styles.pressed,
-                            ]}
-                            onPress={() => startEdit(row.date, row.steps)}>
-                            <Ionicons
-                              name={hasValue ? 'create-outline' : 'add-outline'}
-                              size={18}
-                              color={theme.primary}
-                            />
-                            <ThemedText type="smallBold" themeColor="primary">
-                              {hasValue ? 'Editar' : 'Añadir'}
-                            </ThemedText>
-                          </Pressable>
-                        ) : (
-                          <View style={styles.editActions}>
-                            <Pressable
-                              style={({ pressed }) => [
-                                styles.iconBtn,
-                                { backgroundColor: theme.backgroundElement },
-                                pressed && styles.pressed,
-                              ]}
-                              onPress={cancelEdit}
-                              disabled={saving}>
-                              <Ionicons name="close" size={18} color={theme.textMuted} />
-                            </Pressable>
-                            <Pressable
-                              style={({ pressed }) => [
-                                styles.iconBtn,
-                                { backgroundColor: theme.teal, opacity: saving ? 0.6 : 1 },
-                                pressed && styles.pressed,
-                              ]}
-                              onPress={() => {
-                                void saveEdit(row.date);
-                              }}
-                              disabled={saving}>
-                              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                            </Pressable>
-                          </View>
-                        )}
                       </View>
                     );
                   })}
                 </View>
-
-                {saveError ? (
-                  <ThemedText type="caption" themeColor="textSecondary">
-                    {saveError}
-                  </ThemedText>
-                ) : null}
-
-                {editingDate ? (
-                  <Button
-                    title={saving ? 'Guardando…' : 'Guardar cambios'}
-                    icon="checkmark-done"
-                    onPress={() => {
-                      void saveEdit(editingDate);
-                    }}
-                    disabled={saving}
-                  />
-                ) : null}
               </Card>
             )}
           </View>
@@ -485,32 +368,4 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     flexWrap: 'wrap',
   },
-  dayInput: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.two,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.md,
-  },
-  editActions: {
-    flexDirection: 'row',
-    gap: Spacing.one,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.75 },
 });

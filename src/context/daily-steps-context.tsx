@@ -1,12 +1,15 @@
+import { Pedometer } from 'expo-sensors';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
+import { AppState, Platform } from 'react-native';
 
 import {
   createDailySteps as createDailyStepsApi,
@@ -14,6 +17,16 @@ import {
   updateDailySteps as updateDailyStepsApi,
 } from '@/api/daily-steps';
 import { useClient } from '@/context/client-context';
+import {
+  beginAndroidSession,
+  ensurePedometerReady,
+  onPedometerWatch,
+  type PedometerStatus,
+} from '@/services/pedometer';
+import {
+  registerDailyStepsBackgroundTask,
+  syncPedometerToApi,
+} from '@/services/sync-daily-steps';
 import {
   getWeekDailySteps,
   pickDailyStepsForDate,
@@ -26,12 +39,16 @@ type DailyStepsContextValue = {
   records: DailySteps[];
   /** Registro de hoy (si existe). */
   current: DailySteps | null;
+  /** Pasos de hoy según el sensor (pueden ir por delante del API). */
+  liveSteps: number | null;
+  pedometerStatus: PedometerStatus;
   /** Registros de la semana calendario actual (L–D). */
   weekRecords: DailySteps[];
   loading: boolean;
   saving: boolean;
   error: string | null;
   refreshDailySteps: () => Promise<void>;
+  requestPedometerAccess: () => Promise<void>;
   /** Crea o actualiza los pasos de una fecha concreta. */
   saveStepsForDate: (
     date: string,
@@ -50,22 +67,26 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [liveSteps, setLiveSteps] = useState<number | null>(null);
+  const [pedometerStatus, setPedometerStatus] = useState<PedometerStatus>('idle');
+  const [accessKey, setAccessKey] = useState(0);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refreshDailySteps = useCallback(async () => {
+  const refreshDailySteps = useCallback(async (options?: { silent?: boolean }) => {
     if (!client?._id) {
       setRecords([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
     setError(null);
     try {
       const list = await fetchClientDailySteps(client._id);
       setRecords(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los pasos');
-      setRecords([]);
+      if (!options?.silent) setRecords([]);
     } finally {
       setLoading(false);
     }
@@ -101,7 +122,7 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const saveStepsForDate = useCallback(
-    async (date: string, steps: number, shareInCommunity = false) => {
+    async (date: string, steps: number, shareInCommunity?: boolean) => {
       if (!client?._id) {
         throw new Error('No hay cliente autenticado');
       }
@@ -116,18 +137,17 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       setSaving(true);
       setError(null);
       try {
+        const payload = {
+          steps: Math.round(steps),
+          goal,
+          ...(shareInCommunity != null ? { shareInCommunity } : {}),
+        };
         const updated = existing
-          ? await updateDailyStepsApi(existing._id, {
-              steps: Math.round(steps),
-              goal,
-              shareInCommunity,
-            })
+          ? await updateDailyStepsApi(existing._id, payload)
           : await createDailyStepsApi({
               clientId: client._id,
               date: isoDate,
-              steps: Math.round(steps),
-              goal,
-              shareInCommunity,
+              ...payload,
             });
         upsertRecord(updated);
         return updated;
@@ -142,32 +162,117 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   );
 
   const saveTodaySteps = useCallback(
-    async (steps: number, shareInCommunity = false) => {
+    async (steps: number, shareInCommunity?: boolean) => {
       await saveStepsForDate(toISODate(), steps, shareInCommunity);
     },
     [saveStepsForDate],
   );
 
+  const requestPedometerAccess = useCallback(async () => {
+    const status = await ensurePedometerReady();
+    setPedometerStatus(status);
+    setAccessKey((key) => key + 1);
+  }, []);
+
+  useEffect(() => {
+    if (!client?._id || Platform.OS === 'web') {
+      setPedometerStatus(Platform.OS === 'web' ? 'unavailable' : 'idle');
+      setLiveSteps(null);
+      return;
+    }
+
+    let cancelled = false;
+    let subscription: { remove: () => void } | null = null;
+
+    const flushSync = async () => {
+      const result = await syncPedometerToApi();
+      if (cancelled) return;
+      setPedometerStatus(result.status);
+      if (result.todaySteps != null) setLiveSteps(result.todaySteps);
+      await refreshDailySteps({ silent: true });
+    };
+
+    const queueSync = () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+      syncTimer.current = setTimeout(() => {
+        void flushSync();
+      }, 20000);
+    };
+
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void flushSync();
+        return;
+      }
+      if (state === 'background' || state === 'inactive') {
+        if (syncTimer.current) {
+          clearTimeout(syncTimer.current);
+          syncTimer.current = null;
+        }
+        void flushSync();
+      }
+    });
+
+    const start = async () => {
+      const status = await ensurePedometerReady();
+      if (cancelled) return;
+      setPedometerStatus(status);
+      if (status !== 'tracking') return;
+
+      await beginAndroidSession();
+      await registerDailyStepsBackgroundTask();
+      await flushSync();
+      if (cancelled) return;
+
+      subscription = Pedometer.watchStepCount((result) => {
+        void (async () => {
+          const steps = await onPedometerWatch(result.steps);
+          if (cancelled || steps == null) return;
+          setLiveSteps(steps);
+          queueSync();
+        })();
+      });
+    };
+
+    void start();
+
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+      appStateSub.remove();
+      if (syncTimer.current) {
+        clearTimeout(syncTimer.current);
+        syncTimer.current = null;
+      }
+    };
+  }, [accessKey, client?._id, refreshDailySteps]);
+
   const value = useMemo<DailyStepsContextValue>(
     () => ({
       records,
       current,
+      liveSteps,
+      pedometerStatus,
       weekRecords,
       loading,
       saving,
       error,
       refreshDailySteps,
+      requestPedometerAccess,
       saveStepsForDate,
       saveTodaySteps,
     }),
     [
       records,
       current,
+      liveSteps,
+      pedometerStatus,
       weekRecords,
       loading,
       saving,
       error,
       refreshDailySteps,
+      requestPedometerAccess,
       saveStepsForDate,
       saveTodaySteps,
     ],

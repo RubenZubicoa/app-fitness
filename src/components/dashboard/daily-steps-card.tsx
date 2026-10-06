@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { BarChart, type BarDatum } from '@/components/charts/bar-chart';
 import { ThemedText } from '@/components/themed-text';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { ShareInCommunityToggle } from '@/components/ui/share-in-community-toggle';
@@ -20,32 +21,28 @@ function formatSteps(value: number) {
   return value.toLocaleString('es-ES');
 }
 
-/** Tarjeta de pasos diarios con registro y gráfico semanal. */
+/** Tarjeta de pasos diarios con recuento automático y gráfico semanal. */
 export function DailyStepsCard() {
   const theme = useTheme();
   const {
     records,
     current,
+    liveSteps,
+    pedometerStatus,
     loading,
     saving,
     error,
     saveTodaySteps,
+    requestPedometerAccess,
   } = useDailySteps();
 
   const weekBars = useMemo(() => buildCurrentWeekBars(records), [records]);
   const todayIso = toISODate();
   const goal = resolveStepsGoal(current, records);
-
-  const [input, setInput] = useState('');
   const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const today = current?.steps ?? 0;
-    setInput(today > 0 ? String(today) : '');
-  }, [current]);
-
-  const todaySteps = current?.steps ?? 0;
+  const todaySteps = liveSteps ?? current?.steps ?? 0;
   const progress = goal > 0 ? Math.min(todaySteps / goal, 1) : 0;
   const goalReached = goal > 0 && todaySteps >= goal;
 
@@ -53,30 +50,28 @@ export function DailyStepsCard() {
     () =>
       weekBars.map((day) => ({
         label: day.label,
-        value: day.value,
+        value: day.date === todayIso ? Math.max(day.value, todaySteps) : day.value,
         highlight: day.date === todayIso,
       })),
-    [weekBars, todayIso],
+    [weekBars, todayIso, todaySteps],
   );
 
-  const weekValues = weekBars.map((d) => d.value);
+  const weekValues = chartData.map((d) => d.value);
   const chartMax = Math.max(goal, ...weekValues, 1);
   const daysWithSteps = weekValues.filter((v) => v > 0).length;
 
-  const registerSteps = async () => {
-    const parsed = Number(input.replace(/\D/g, ''));
-    if (!parsed || Number.isNaN(parsed) || saving) return;
-
+  const updateShare = async (value: boolean) => {
+    setShareInCommunity(value);
+    if (todaySteps <= 0) return;
     setSaveError(null);
     try {
-      await saveTodaySteps(parsed, shareInCommunity);
-      setInput(String(parsed));
+      await saveTodaySteps(todaySteps, value);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'No se pudieron guardar los pasos');
+      setSaveError(err instanceof Error ? err.message : 'No se pudo actualizar el recuento');
     }
   };
 
-  if (loading) {
+  if (loading && records.length === 0 && liveSteps == null) {
     return (
       <Card style={styles.card}>
         <ThemedText type="body" themeColor="textSecondary">
@@ -86,7 +81,7 @@ export function DailyStepsCard() {
     );
   }
 
-  if (error && records.length === 0) {
+  if (error && records.length === 0 && liveSteps == null) {
     return (
       <Card style={styles.card}>
         <ThemedText type="body" themeColor="textSecondary">
@@ -124,44 +119,43 @@ export function DailyStepsCard() {
         />
       </View>
 
-      <View style={styles.inputRow}>
-        <View
-          style={[
-            styles.inputWrap,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <ThemedText type="caption" themeColor="textMuted">
-            Registrar hoy
+      {pedometerStatus === 'tracking' ? (
+        <ThemedText type="caption" themeColor="textSecondary">
+          Recuento automático activo. Sigue contando en segundo plano aunque cierres la app.
+        </ThemedText>
+      ) : null}
+
+      {pedometerStatus === 'denied' ? (
+        <View style={styles.permissionBox}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Necesitamos permiso de actividad física para contar tus pasos.
           </ThemedText>
-          <TextInput
-            style={[styles.input, { color: theme.text }]}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ej. 8500"
-            placeholderTextColor={theme.textMuted}
-            keyboardType="number-pad"
-            returnKeyType="done"
-            onSubmitEditing={() => {
-              void registerSteps();
+          <Button
+            title="Permitir recuento"
+            icon="walk-outline"
+            variant="secondary"
+            onPress={() => {
+              void requestPedometerAccess();
             }}
-            editable={!saving}
+          />
+          <Button
+            title="Abrir ajustes"
+            icon="settings-outline"
+            variant="ghost"
+            onPress={() => {
+              void Linking.openSettings();
+            }}
           />
         </View>
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveBtn,
-            { backgroundColor: theme.teal, opacity: saving ? 0.6 : 1 },
-            pressed && styles.pressed,
-          ]}
-          onPress={() => {
-            void registerSteps();
-          }}
-          disabled={saving}>
-          <ThemedText type="smallBold" style={styles.saveBtnText}>
-            {saving ? '…' : 'Guardar'}
-          </ThemedText>
-        </Pressable>
-      </View>
+      ) : null}
+
+      {pedometerStatus === 'unavailable' ? (
+        <ThemedText type="caption" themeColor="textSecondary">
+          {Platform.OS === 'web'
+            ? 'El recuento automático está disponible en iOS y Android.'
+            : 'Este dispositivo no tiene sensor de pasos. El recuento se actualizará cuando esté disponible.'}
+        </ThemedText>
+      ) : null}
 
       {saveError ? (
         <ThemedText type="caption" themeColor="textSecondary">
@@ -171,8 +165,10 @@ export function DailyStepsCard() {
 
       <ShareInCommunityToggle
         value={shareInCommunity}
-        onChange={setShareInCommunity}
-        disabled={saving}
+        onChange={(value) => {
+          void updateShare(value);
+        }}
+        disabled={saving || todaySteps <= 0}
       />
 
       <View style={styles.chartHeader}>
@@ -218,36 +214,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: Radius.pill,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.two,
-  },
-  inputWrap: {
-    flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    gap: 2,
-  },
-  input: {
-    fontSize: 20,
-    fontWeight: '800',
-    padding: 0,
-    minHeight: 28,
-  },
-  saveBtn: {
-    height: 52,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-  },
-  pressed: { opacity: 0.75 },
+  permissionBox: { gap: Spacing.two },
   chartHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

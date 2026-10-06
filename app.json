@@ -21,7 +21,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.glifo.regenesis"
+      "package": "com.glifo.regenesis",
+      "permissions": ["android.permission.ACTIVITY_RECOGNITION"]
     },
     "web": {
       "output": "static",
@@ -43,7 +44,15 @@
           "photosPermission": "Permite a Regenesis acceder a fotos y vídeos de tus entrenos y progreso.",
           "cameraPermission": "Permite a Regenesis usar la cámara para registrar tu entrenamiento."
         }
-      ]
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Regenesis usa el sensor de movimiento para contar tus pasos automáticamente, también en segundo plano."
+        }
+      ],
+      "expo-background-task",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
