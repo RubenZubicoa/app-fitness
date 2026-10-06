@@ -51,7 +51,8 @@
     "build:ios": "npx expo export --platform ios",
     "deploy:web": "eas deploy",
     "deploy:android": "eas build --platform android --profile production",
-    "deploy:ios": "eas build --platform ios --profile production"
+    "deploy:ios": "eas build --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios"
   },
   "private": true
 }
