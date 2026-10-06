@@ -133,12 +133,14 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       const isoDate = date.slice(0, 10);
       const existing = pickDailyStepsForDate(records, isoDate);
       const goal = resolveStepsGoal(existing, records);
+      // Nunca bajar el valor ya registrado (p. ej. re-sync del sensor).
+      const nextSteps = Math.max(existing?.steps ?? 0, Math.round(steps));
 
       setSaving(true);
       setError(null);
       try {
         const payload = {
-          steps: Math.round(steps),
+          steps: nextSteps,
           goal,
           ...(shareInCommunity != null ? { shareInCommunity } : {}),
         };
@@ -219,7 +221,21 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       setPedometerStatus(status);
       if (status !== 'tracking') return;
 
-      await beginAndroidSession();
+      // Semilla Android con lo ya guardado en API/local para no reiniciar a 0.
+      let apiToday = 0;
+      try {
+        const list = await fetchClientDailySteps(client._id);
+        if (cancelled) return;
+        setRecords(list);
+        apiToday = pickDailyStepsForDate(list, toISODate())?.steps ?? 0;
+      } catch {
+        apiToday = 0;
+      }
+
+      const seeded = await beginAndroidSession(apiToday);
+      if (cancelled) return;
+      setLiveSteps(seeded);
+
       await registerDailyStepsBackgroundTask();
       await flushSync();
       if (cancelled) return;

@@ -1,9 +1,17 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import type { Client } from '@/types/client';
+import { normalizeClient } from '@/types/client';
+
 const TOKEN_KEY = 'regenesis.authToken';
 const CLIENT_ID_KEY = 'regenesis.clientId';
+const CLIENT_SNAPSHOT_KEY = 'regenesis.clientSnapshot';
+const SESSION_EXPIRES_KEY = 'regenesis.sessionExpiresAt';
 const ANDROID_STEPS_KEY = 'regenesis.androidSteps';
+
+/** Caducidad local de la sesión tras el login. */
+export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const secureOptions: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
@@ -64,6 +72,53 @@ export async function loadClientId(): Promise<string | null> {
   return value?.trim() ? value.trim() : null;
 }
 
+export async function persistSessionExpiresAt(expiresAt: number | null): Promise<void> {
+  await write(
+    SESSION_EXPIRES_KEY,
+    expiresAt != null && Number.isFinite(expiresAt) ? String(Math.round(expiresAt)) : null,
+  );
+}
+
+export async function loadSessionExpiresAt(): Promise<number | null> {
+  const value = await read(SESSION_EXPIRES_KEY);
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** True si hay caducidad guardada y aún no ha pasado. */
+export async function isSessionWithinTtl(): Promise<boolean> {
+  const expiresAt = await loadSessionExpiresAt();
+  if (expiresAt == null) return false;
+  return Date.now() < expiresAt;
+}
+
+export async function startSessionTtl(ttlMs: number = SESSION_TTL_MS): Promise<number> {
+  const expiresAt = Date.now() + ttlMs;
+  await persistSessionExpiresAt(expiresAt);
+  return expiresAt;
+}
+
+export async function persistClientSnapshot(client: Client | null): Promise<void> {
+  if (!client) {
+    await write(CLIENT_SNAPSHOT_KEY, null);
+    return;
+  }
+  await write(CLIENT_SNAPSHOT_KEY, JSON.stringify(client));
+}
+
+export async function loadClientSnapshot(): Promise<Client | null> {
+  const raw = await read(CLIENT_SNAPSHOT_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return normalizeClient(parsed);
+  } catch {
+    return null;
+  }
+}
+
 export type AndroidStepsCache = {
   date: string;
   steps: number;
@@ -96,8 +151,15 @@ export async function persistAndroidStepsCache(
   await write(ANDROID_STEPS_KEY, JSON.stringify(cache));
 }
 
-export async function clearSessionStore(): Promise<void> {
+/** Limpia credenciales de sesión (no toca el acumulado de pasos del día). */
+export async function clearAuthSessionStore(): Promise<void> {
   await persistAuthToken(null);
   await persistClientId(null);
+  await persistSessionExpiresAt(null);
+  await persistClientSnapshot(null);
+}
+
+export async function clearSessionStore(): Promise<void> {
+  await clearAuthSessionStore();
   await persistAndroidStepsCache(null);
 }

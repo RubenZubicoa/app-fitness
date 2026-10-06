@@ -11,10 +11,16 @@ import {
 } from '@/api/clients';
 import { clearAuthToken, setAuthFailureHandler, setAuthToken } from '@/api/http';
 import {
+  clearAuthSessionStore,
+  clearSessionStore,
+  isSessionWithinTtl,
   loadAuthToken,
   loadClientId,
-  persistAndroidStepsCache,
+  loadClientSnapshot,
+  loadSessionExpiresAt,
   persistClientId,
+  persistClientSnapshot,
+  startSessionTtl,
 } from '@/api/session-store';
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
@@ -40,10 +46,18 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
 
+  /** Cierre de sesión intencional: limpia auth y caché de pasos. */
   const clearLocalSession = useCallback(() => {
     clearAuthToken();
-    void persistClientId(null);
-    void persistAndroidStepsCache(null);
+    void clearSessionStore();
+    void unregisterDailyStepsBackgroundTask();
+    setClient(null);
+  }, []);
+
+  /** Fallo de auth (401): limpia credenciales pero conserva pasos del día. */
+  const clearAuthKeepSteps = useCallback(() => {
+    clearAuthToken();
+    void clearAuthSessionStore();
     void unregisterDailyStepsBackgroundTask();
     setClient(null);
   }, []);
@@ -60,12 +74,43 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       try {
         const token = await loadAuthToken();
         const clientId = await loadClientId();
-        if (!token || !clientId) return;
+
+        if (!token || !clientId) {
+          return;
+        }
+
+        // Migración: sesiones antiguas sin caducidad reciben 7 días desde ahora.
+        let withinTtl = await isSessionWithinTtl();
+        if (!withinTtl) {
+          const expiresAt = await loadSessionExpiresAt();
+          if (expiresAt == null) {
+            await startSessionTtl();
+            withinTtl = true;
+          }
+        }
+
+        if (!withinTtl) {
+          clearAuthToken();
+          await clearAuthSessionStore();
+          return;
+        }
+
         setAuthToken(token);
-        const restored = await fetchClientById(clientId);
-        if (!cancelled) setClient(restored);
+
+        try {
+          const restored = await fetchClientById(clientId);
+          if (cancelled) return;
+          setClient(restored);
+          await persistClientSnapshot(restored);
+        } catch {
+          // Sin red o API caída: mantiene la sesión local hasta la caducidad de 7 días.
+          const snapshot = await loadClientSnapshot();
+          if (!cancelled && snapshot && snapshot._id === clientId) {
+            setClient(snapshot);
+          }
+        }
       } catch {
-        // 401 limpia el token en http; si no hay red, el usuario puede volver a entrar.
+        // Si falla el restore, el usuario puede volver a entrar.
       } finally {
         if (!cancelled) setIsRestoring(false);
       }
@@ -79,18 +124,17 @@ export function ClientProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAuthFailureHandler(() => {
-      void persistClientId(null);
-      void persistAndroidStepsCache(null);
-      void unregisterDailyStepsBackgroundTask();
-      setClient(null);
+      clearAuthKeepSteps();
       router.replace('/');
     });
     return () => setAuthFailureHandler(null);
-  }, []);
+  }, [clearAuthKeepSteps]);
 
   const login = useCallback(async (email: string, password: string) => {
     const logged = await apiLogin(email, password);
     await persistClientId(logged._id);
+    await persistClientSnapshot(logged);
+    await startSessionTtl();
     setClient(logged);
     return logged;
   }, []);
@@ -99,6 +143,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     if (!client?._id) return;
     const fresh = await fetchClientById(client._id);
     setClient(fresh);
+    await persistClientSnapshot(fresh);
   }, [client?._id]);
 
   const deleteAccount = useCallback(async () => {
@@ -118,6 +163,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       try {
         const updated = await apiUpdateClient(client._id, payload);
         setClient(updated);
+        await persistClientSnapshot(updated);
         return updated;
       } finally {
         setSaving(false);

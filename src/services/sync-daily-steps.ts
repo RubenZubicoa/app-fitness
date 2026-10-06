@@ -8,9 +8,14 @@ import {
   updateDailySteps as updateDailyStepsApi,
 } from '@/api/daily-steps';
 import { getAuthToken, setAuthToken } from '@/api/http';
-import { loadAuthToken, loadClientId } from '@/api/session-store';
+import {
+  isSessionWithinTtl,
+  loadAuthToken,
+  loadClientId,
+} from '@/api/session-store';
 import {
   getPedometerStatus,
+  raiseAndroidStepsFloor,
   readStepsForDate,
   type PedometerStatus,
 } from '@/services/pedometer';
@@ -29,6 +34,8 @@ export type PedometerSyncResult = {
 };
 
 async function prepareAuthForBackground(): Promise<string | null> {
+  if (!(await isSessionWithinTtl())) return null;
+
   if (!getAuthToken()) {
     const token = await loadAuthToken();
     if (token) setAuthToken(token);
@@ -37,7 +44,10 @@ async function prepareAuthForBackground(): Promise<string | null> {
   return loadClientId();
 }
 
-/** Lee el sensor y crea/actualiza los registros del API (hoy y, en iOS, los últimos 7 días). */
+/**
+ * Lee el sensor y crea/actualiza los registros del API.
+ * Nunca reduce los pasos ya guardados: siempre toma el máximo (sensor vs API).
+ */
 export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
   const clientId = await prepareAuthForBackground();
   if (!clientId) {
@@ -61,23 +71,28 @@ export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
   for (const date of dates) {
     const sensorSteps = await readStepsForDate(date);
     if (sensorSteps == null) continue;
-    if (date === today) todaySteps = sensorSteps;
 
     const existing = pickDailyStepsForDate(records, date);
-    const next = Math.round(sensorSteps);
-    if (next <= 0 && !existing) continue;
+    const existingSteps = existing?.steps ?? 0;
+    // Nunca sobrescribir a la baja: se acumula el máximo conocido.
+    const next = Math.max(existingSteps, Math.round(sensorSteps));
 
-    if (existing && existing.steps === next) continue;
-    if (Platform.OS !== 'ios' && existing && next < existing.steps) {
-      if (date === today) todaySteps = existing.steps;
-      continue;
+    if (date === today) {
+      todaySteps = next;
+      if (Platform.OS === 'android') {
+        await raiseAndroidStepsFloor(next);
+      }
     }
+
+    if (next <= 0 && !existing) continue;
+    if (existing && existing.steps === next) continue;
 
     const goal = resolveStepsGoal(existing, records);
     if (existing) {
       const updated = await updateDailyStepsApi(existing._id, { steps: next, goal });
       const idx = records.findIndex((item) => item._id === updated._id);
       if (idx >= 0) records[idx] = updated;
+      else records.push(updated);
     } else {
       const created = await createDailyStepsApi({
         clientId,
