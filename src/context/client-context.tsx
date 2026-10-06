@@ -9,7 +9,7 @@ import {
   updateClient as apiUpdateClient,
   type UpdateClientPayload,
 } from '@/api/clients';
-import { clearAuthToken, setAuthFailureHandler, setAuthToken } from '@/api/http';
+import { clearAuthToken, getAuthToken, setAuthFailureHandler, setAuthToken } from '@/api/http';
 import {
   clearAuthSessionStore,
   clearSessionStore,
@@ -18,6 +18,7 @@ import {
   loadClientId,
   loadClientSnapshot,
   loadSessionExpiresAt,
+  persistAuthToken,
   persistClientId,
   persistClientSnapshot,
   startSessionTtl,
@@ -76,6 +77,8 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         const clientId = await loadClientId();
 
         if (!token || !clientId) {
+          // Sin JWT no hay sesión usable: limpia restos de snapshot.
+          if (clientId) await clearAuthSessionStore();
           return;
         }
 
@@ -100,10 +103,14 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         try {
           const restored = await fetchClientById(clientId);
           if (cancelled) return;
+          // Si un 401 limpió el token durante el fetch, no montar cliente.
+          if (!getAuthToken()) return;
           setClient(restored);
           await persistClientSnapshot(restored);
         } catch {
-          // Sin red o API caída: mantiene la sesión local hasta la caducidad de 7 días.
+          // Solo offline/red: snapshot con JWT aún presente.
+          // Si fue 401, getAuthToken() ya es null → no dejar sesión zombi.
+          if (!getAuthToken()) return;
           const snapshot = await loadClientSnapshot();
           if (!cancelled && snapshot && snapshot._id === clientId) {
             setClient(snapshot);
@@ -132,9 +139,16 @@ export function ClientProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const logged = await apiLogin(email, password);
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('No se pudo conservar el token de autenticación');
+    }
     await persistClientId(logged._id);
     await persistClientSnapshot(logged);
     await startSessionTtl();
+    // Persiste de nuevo el JWT tras el resto de escrituras (y fuerza await).
+    await persistAuthToken(token);
+    setAuthToken(token);
     setClient(logged);
     return logged;
   }, []);

@@ -5,6 +5,7 @@ import type { Client } from '@/types/client';
 import { normalizeClient } from '@/types/client';
 
 const TOKEN_KEY = 'regenesis.authToken';
+const TOKEN_CHUNKS_KEY = 'regenesis.authToken.chunks';
 const CLIENT_ID_KEY = 'regenesis.clientId';
 const CLIENT_SNAPSHOT_KEY = 'regenesis.clientSnapshot';
 const SESSION_EXPIRES_KEY = 'regenesis.sessionExpiresAt';
@@ -12,6 +13,9 @@ const ANDROID_STEPS_KEY = 'regenesis.androidSteps';
 
 /** Caducidad local de la sesión tras el login. */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** SecureStore suele limitar ~2048 bytes; troceamos el JWT si hace falta. */
+const SECURE_CHUNK_SIZE = 1800;
 
 const secureOptions: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
@@ -21,7 +25,7 @@ function canUseLocalStorage(): boolean {
   return typeof localStorage !== 'undefined';
 }
 
-async function write(key: string, value: string | null): Promise<void> {
+async function write(key: string, value: string | null): Promise<boolean> {
   if (Platform.OS !== 'web') {
     try {
       if (value == null) {
@@ -29,15 +33,16 @@ async function write(key: string, value: string | null): Promise<void> {
       } else {
         await SecureStore.setItemAsync(key, value, secureOptions);
       }
-      return;
+      return true;
     } catch {
-      // Si el Keychain falla, no bloqueamos el resto de la sesión.
+      // Fallback debajo.
     }
   }
 
-  if (!canUseLocalStorage()) return;
+  if (!canUseLocalStorage()) return false;
   if (value == null) localStorage.removeItem(key);
   else localStorage.setItem(key, value);
+  return true;
 }
 
 async function read(key: string): Promise<string | null> {
@@ -46,7 +51,7 @@ async function read(key: string): Promise<string | null> {
       const value = await SecureStore.getItemAsync(key, secureOptions);
       if (value != null) return value;
     } catch {
-      // Continúa al fallback web/local si existe.
+      // Continúa al fallback.
     }
   }
 
@@ -54,13 +59,80 @@ async function read(key: string): Promise<string | null> {
   return localStorage.getItem(key);
 }
 
+async function deleteChunkedToken(): Promise<void> {
+  const chunksRaw = await read(TOKEN_CHUNKS_KEY);
+  const count = chunksRaw ? Number(chunksRaw) : 0;
+  if (Number.isFinite(count) && count > 0) {
+    for (let i = 0; i < count; i++) {
+      try {
+        await write(`${TOKEN_KEY}.${i}`, null);
+      } catch {
+        // ignore
+      }
+    }
+  }
+  try {
+    await write(TOKEN_CHUNKS_KEY, null);
+  } catch {
+    // ignore
+  }
+  try {
+    await write(TOKEN_KEY, null);
+  } catch {
+    // ignore
+  }
+}
+
 export async function persistAuthToken(token: string | null): Promise<void> {
-  await write(TOKEN_KEY, token);
+  if (token == null || !token.trim()) {
+    await deleteChunkedToken();
+    return;
+  }
+
+  const value = token.trim();
+  await deleteChunkedToken();
+
+  if (value.length <= SECURE_CHUNK_SIZE) {
+    const ok = await write(TOKEN_KEY, value);
+    if (!ok) {
+      throw new Error('No se pudo guardar el token de sesión en el dispositivo');
+    }
+    return;
+  }
+
+  const chunks: string[] = [];
+  for (let i = 0; i < value.length; i += SECURE_CHUNK_SIZE) {
+    chunks.push(value.slice(i, i + SECURE_CHUNK_SIZE));
+  }
+  const metaOk = await write(TOKEN_CHUNKS_KEY, String(chunks.length));
+  if (!metaOk) {
+    throw new Error('No se pudo guardar el token de sesión en el dispositivo');
+  }
+  for (let i = 0; i < chunks.length; i++) {
+    const ok = await write(`${TOKEN_KEY}.${i}`, chunks[i]);
+    if (!ok) {
+      await deleteChunkedToken();
+      throw new Error('No se pudo guardar el token de sesión en el dispositivo');
+    }
+  }
 }
 
 export async function loadAuthToken(): Promise<string | null> {
-  const value = await read(TOKEN_KEY);
-  return value?.trim() ? value.trim() : null;
+  const single = await read(TOKEN_KEY);
+  if (single?.trim()) return single.trim();
+
+  const chunksRaw = await read(TOKEN_CHUNKS_KEY);
+  const count = chunksRaw ? Number(chunksRaw) : 0;
+  if (!Number.isFinite(count) || count <= 0) return null;
+
+  const parts: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const part = await read(`${TOKEN_KEY}.${i}`);
+    if (!part) return null;
+    parts.push(part);
+  }
+  const joined = parts.join('').trim();
+  return joined || null;
 }
 
 export async function persistClientId(id: string | null): Promise<void> {

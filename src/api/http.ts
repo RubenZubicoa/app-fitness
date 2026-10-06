@@ -1,5 +1,9 @@
 import { API_URL } from '@/constants/api';
-import { persistAuthToken, persistSessionExpiresAt } from '@/api/session-store';
+import {
+  loadAuthToken,
+  persistAuthToken,
+  persistSessionExpiresAt,
+} from '@/api/session-store';
 
 type ApiErrorBody = { message?: string };
 type AuthFailureHandler = () => void;
@@ -7,9 +11,34 @@ type AuthFailureHandler = () => void;
 let authToken: string | null = null;
 let authFailureHandler: AuthFailureHandler | null = null;
 let authFailureNotified = false;
+let hydratePromise: Promise<string | null> | null = null;
 
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+/**
+ * Garantiza el JWT en memoria. Si se perdió al recargar el JS bundle,
+ * lo recupera del almacenamiento persistente.
+ */
+export async function ensureAuthToken(): Promise<string | null> {
+  if (authToken) return authToken;
+  if (!hydratePromise) {
+    hydratePromise = (async () => {
+      try {
+        const stored = await loadAuthToken();
+        if (stored && !authToken) {
+          // Solo memoria: no reescribir disco (evita condiciones de carrera).
+          authToken = stored;
+          authFailureNotified = false;
+        }
+        return authToken;
+      } finally {
+        hydratePromise = null;
+      }
+    })();
+  }
+  return hydratePromise;
 }
 
 export function setAuthToken(token: string | null): void {
@@ -17,7 +46,9 @@ export function setAuthToken(token: string | null): void {
   if (authToken) {
     authFailureNotified = false;
   }
-  void persistAuthToken(authToken);
+  void persistAuthToken(authToken).catch(() => {
+    // Si falla el disco, al menos se mantiene el JWT en memoria esta sesión.
+  });
 }
 
 export function clearAuthToken(): void {
@@ -32,10 +63,18 @@ export function setAuthFailureHandler(handler: AuthFailureHandler | null): void 
 }
 
 function notifyAuthFailure(): void {
-  clearAuthToken();
-  if (authFailureNotified) return;
+  if (authFailureNotified) {
+    // Evita dejar JWT huérfano si el handler aún no está montado.
+    clearAuthToken();
+    return;
+  }
   authFailureNotified = true;
-  authFailureHandler?.();
+  if (authFailureHandler) {
+    // El handler limpia token + cliente juntos (no dejar sesión sin JWT).
+    authFailureHandler();
+  } else {
+    clearAuthToken();
+  }
 }
 
 export function extractAuthToken(raw: Record<string, unknown>): string | null {
@@ -71,7 +110,7 @@ function isUnauthorizedStatus(status: number): boolean {
 
 /**
  * fetch al API con Authorization Bearer cuando hay token de sesión.
- * Si el token expiró (401/403), limpia la sesión y notifica para redirigir al login.
+ * Si el token expiró (401/403), limpia la sesión completa (no deja cliente sin JWT).
  */
 export async function apiFetch(
   path: string,
@@ -89,7 +128,7 @@ export async function apiFetch(
   }
 
   if (!options?.skipAuth) {
-    const token = getAuthToken();
+    const token = await ensureAuthToken();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
