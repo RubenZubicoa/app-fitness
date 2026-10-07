@@ -7,6 +7,7 @@
     "@expo/ui": "~57.0.4",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.4",
+    "expo-android-pedometer": "^2.0.0",
     "expo-background-task": "~57.0.21",
     "expo-constants": "~57.0.3",
     "expo-dev-client": "~57.0.10",

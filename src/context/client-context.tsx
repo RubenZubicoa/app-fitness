@@ -25,6 +25,7 @@ import {
 } from '@/api/session-store';
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
+import { stopBackgroundStepTracking } from '@/services/pedometer';
 import { unregisterDailyStepsBackgroundTask } from '@/services/sync-daily-steps';
 
 type ClientContextValue = {
@@ -51,6 +52,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const clearLocalSession = useCallback(() => {
     clearAuthToken();
     void clearSessionStore();
+    void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
     setClient(null);
   }, []);
@@ -59,6 +61,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const clearAuthKeepSteps = useCallback(() => {
     clearAuthToken();
     void clearAuthSessionStore();
+    void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
     setClient(null);
   }, []);

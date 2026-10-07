@@ -61,7 +61,8 @@ export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
 
   const records = await fetchClientDailySteps(clientId);
   const today = toISODate();
-  const lookbackDays = Platform.OS === 'ios' ? 6 : 0;
+  // iOS: Core Motion guarda ~7 días. Android (expo-android-pedometer): histórico local.
+  const lookbackDays = Platform.OS === 'ios' ? 6 : Platform.OS === 'android' ? 1 : 0;
   const dates = Array.from({ length: lookbackDays + 1 }, (_, index) =>
     shiftISODate(today, index - lookbackDays),
   );
@@ -116,7 +117,14 @@ export async function registerDailyStepsBackgroundTask(): Promise<void> {
   if (status !== BackgroundTask.BackgroundTaskStatus.Available) return;
 
   const registered = await TaskManager.isTaskRegisteredAsync(SYNC_DAILY_STEPS_TASK);
-  if (registered) return;
+  if (registered) {
+    // Re-registra para asegurar el intervalo mínimo tras actualizaciones.
+    try {
+      await BackgroundTask.unregisterTaskAsync(SYNC_DAILY_STEPS_TASK);
+    } catch {
+      // ignore
+    }
+  }
 
   await BackgroundTask.registerTaskAsync(SYNC_DAILY_STEPS_TASK, {
     minimumInterval: 15,

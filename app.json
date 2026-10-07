@@ -11,7 +11,12 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.regenesis",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["processing"],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.expo.modules.backgroundtask.processing"
+        ],
+        "NSMotionUsageDescription": "Regenesis usa el sensor de movimiento para contar tus pasos automáticamente, también cuando la app está en segundo plano."
       }
     },
     "android": {
@@ -22,7 +27,14 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.glifo.regenesis",
-      "permissions": ["android.permission.ACTIVITY_RECOGNITION"]
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_HEALTH",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+      ]
     },
     "web": {
       "output": "static",
@@ -52,7 +64,8 @@
         }
       ],
       "expo-background-task",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-android-pedometer"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,4 +1,3 @@
-import { Pedometer } from 'expo-sensors';
 import {
   createContext,
   useCallback,
@@ -20,7 +19,8 @@ import { useClient } from '@/context/client-context';
 import {
   beginAndroidSession,
   ensurePedometerReady,
-  onPedometerWatch,
+  startBackgroundStepTracking,
+  subscribeStepUpdates,
   type PedometerStatus,
 } from '@/services/pedometer';
 import {
@@ -236,17 +236,17 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       setLiveSteps(seeded);
 
+      // Android: servicio nativo que sigue contando con la app cerrada.
+      await startBackgroundStepTracking();
+      // iOS/Android: sync periódico al API aunque la UI no esté abierta.
       await registerDailyStepsBackgroundTask();
       await flushSync();
       if (cancelled) return;
 
-      subscription = Pedometer.watchStepCount((result) => {
-        void (async () => {
-          const steps = await onPedometerWatch(result.steps);
-          if (cancelled || steps == null) return;
-          setLiveSteps(steps);
-          queueSync();
-        })();
+      subscription = subscribeStepUpdates((steps) => {
+        if (cancelled) return;
+        setLiveSteps(steps);
+        queueSync();
       });
     };
 

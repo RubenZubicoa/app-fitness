@@ -121,7 +121,9 @@ export function DailyStepsCard() {
 
       {pedometerStatus === 'tracking' ? (
         <ThemedText type="caption" themeColor="textSecondary">
-          Recuento automático activo. Sigue contando en segundo plano aunque cierres la app.
+          {Platform.OS === 'android'
+            ? 'Recuento activo en segundo plano. Mantén la notificación de Regenesis para que siga contando con la app cerrada.'
+            : 'Recuento automático activo. Al reabrir la app se sincronizan los pasos dados mientras estaba cerrada.'}
         </ThemedText>
       ) : null}
 
