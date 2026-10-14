@@ -3,6 +3,16 @@ import { Platform } from 'react-native';
 import { apiFetch, apiRequest, extractAuthToken, parseJson, setAuthToken } from '@/api/http';
 import { normalizeClient, type Client } from '@/types/client';
 
+function clientFromAuthResponse(raw: Record<string, unknown>): Client {
+  const clientRaw =
+    raw.client && typeof raw.client === 'object'
+      ? (raw.client as Record<string, unknown>)
+      : raw.user && typeof raw.user === 'object'
+        ? (raw.user as Record<string, unknown>)
+        : raw;
+  return normalizeClient(clientRaw);
+}
+
 export async function loginClient(email: string, password: string): Promise<Client> {
   const raw = await apiRequest<Record<string, unknown>>(
     '/api/clients/login',
@@ -19,14 +29,82 @@ export async function loginClient(email: string, password: string): Promise<Clie
   }
   setAuthToken(token);
 
-  const clientRaw =
-    raw.client && typeof raw.client === 'object'
-      ? (raw.client as Record<string, unknown>)
-      : raw.user && typeof raw.user === 'object'
-        ? (raw.user as Record<string, unknown>)
-        : raw;
+  return clientFromAuthResponse(raw);
+}
 
-  return normalizeClient(clientRaw);
+export type RegisterClientPayload = {
+  name: string;
+  fullName: string;
+  email: string;
+  telefono: string;
+  /** Contraseña en claro; se envía como `contraseña`. */
+  contraseña: string;
+  goal: string;
+  coach: string;
+  /** Opcional; no se envía si está vacío. */
+  plan?: string;
+  /** `_id` del documento Program. */
+  program: string;
+  startDate: string;
+  endDate: string;
+  week: number;
+  totalWeeks: number;
+  phase: number;
+  totalPhases: number;
+  /** URI local de la foto de perfil (obligatoria). */
+  avatarUri: string;
+};
+
+/**
+ * Alta de cliente: POST /api/clients (multipart/form-data).
+ * El avatar se envía como archivo; si hay JWT, deja la sesión iniciada.
+ */
+export async function registerClient(payload: RegisterClientPayload): Promise<Client> {
+  const formData = new FormData();
+  formData.append('name', payload.name);
+  formData.append('fullName', payload.fullName);
+  formData.append('email', payload.email);
+  formData.append('telefono', payload.telefono);
+  formData.append('contraseña', payload.contraseña);
+  formData.append('password', payload.contraseña);
+  formData.append('goal', payload.goal);
+  formData.append('coach', payload.coach);
+  if (payload.plan?.trim()) {
+    formData.append('plan', payload.plan.trim());
+  }
+  formData.append('program', payload.program);
+  formData.append('startDate', payload.startDate);
+  formData.append('endDate', payload.endDate);
+  formData.append('week', String(payload.week));
+  formData.append('totalWeeks', String(payload.totalWeeks));
+  formData.append('phase', String(payload.phase));
+  formData.append('totalPhases', String(payload.totalPhases));
+
+  await appendAvatarFile(formData, payload.avatarUri, 'avatar.jpg');
+
+  const res = await apiFetch(
+    '/api/clients',
+    { method: 'POST', body: formData },
+    { skipAuth: true, rawBody: true },
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    const message =
+      data && typeof data === 'object' && 'message' in data
+        ? String((data as { message?: string }).message)
+        : `Error ${res.status}`;
+    throw new Error(message);
+  }
+
+  const raw = (data ?? {}) as Record<string, unknown>;
+  const token = extractAuthToken(raw);
+  if (token) {
+    setAuthToken(token);
+    return clientFromAuthResponse(raw);
+  }
+
+  // Sin token en el alta: inicia sesión con las credenciales recién creadas.
+  return loginClient(payload.email, payload.contraseña);
 }
 
 export async function fetchClientById(id: string): Promise<Client> {

@@ -12,7 +12,9 @@
       "bundleIdentifier": "com.regenesis",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["processing"],
+        "UIBackgroundModes": [
+          "processing"
+        ],
         "BGTaskSchedulerPermittedIdentifiers": [
           "com.expo.modules.backgroundtask.processing"
         ],
@@ -65,7 +67,10 @@
       ],
       "expo-background-task",
       "expo-secure-store",
-      "expo-android-pedometer"
+      "expo-android-pedometer",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -26,6 +26,47 @@ export type ProgramPhase = (typeof programPhases)[number];
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/** Duración del plan al registrarse (días entre startDate y endDate). */
+export const DEFAULT_PLAN_DAYS = 90;
+export const DEFAULT_TOTAL_PHASES = 3;
+
+function toISODateLocal(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Fechas del plan al registrarse: hoy → +90 días.
+ * totalWeeks se deriva del intervalo; week/phase arrancan en 1.
+ */
+export function buildRegistrationPlanDates(
+  from: Date = new Date(),
+  planDays: number = DEFAULT_PLAN_DAYS,
+): {
+  startDate: string;
+  endDate: string;
+  totalWeeks: number;
+  week: number;
+  phase: number;
+  totalPhases: number;
+} {
+  const start = startOfDay(from);
+  const end = new Date(start);
+  end.setDate(start.getDate() + planDays);
+  const startDate = toISODateLocal(start);
+  const endDate = toISODateLocal(end);
+  return {
+    startDate,
+    endDate,
+    totalWeeks: getTotalWeeks(startDate, endDate),
+    week: 1,
+    phase: 1,
+    totalPhases: DEFAULT_TOTAL_PHASES,
+  };
+}
+
 function parseDay(isoDate: string): Date {
   return new Date(`${isoDate}T00:00:00`);
 }

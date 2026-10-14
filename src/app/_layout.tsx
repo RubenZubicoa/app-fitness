@@ -54,6 +54,7 @@ function RootNavigator() {
           contentStyle: { backgroundColor: palette.background },
         }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="registro" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="onboarding" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="home" />
         <Stack.Screen name="sesion-entreno" options={{ animation: 'slide_from_bottom' }} />

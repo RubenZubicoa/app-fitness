@@ -124,7 +124,6 @@ export default function LoginScreen() {
               disabled={loading}
             />
 
-            {/* Oculto de momento: acceso al onboarding
             <View style={styles.divider}>
               <View style={styles.line} />
               <ThemedText type="caption" themeColor="textMuted">
@@ -133,14 +132,17 @@ export default function LoginScreen() {
               <View style={styles.line} />
             </View>
 
-            <Link href="/onboarding" asChild>
-              <Button title="Empezar mi proceso" variant="secondary" icon="sparkles-outline" />
-            </Link>
-            */}
+            <Button
+              title="Crear cuenta"
+              variant="secondary"
+              icon="person-add-outline"
+              onPress={() => router.push('/registro')}
+              disabled={loading}
+            />
           </View>
 
           <ThemedText type="small" style={styles.footer}>
-            ¿Pagaste en consulta? Tu coach te dará acceso.
+            ¿Ya tienes coach? Completa tu registro para acceder.
           </ThemedText>
         </ScrollView>
       </KeyboardAvoidingView>

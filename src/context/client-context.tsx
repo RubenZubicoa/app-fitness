@@ -6,7 +6,9 @@ import {
   deleteClient as apiDeleteClient,
   fetchClientById,
   loginClient as apiLogin,
+  registerClient as apiRegister,
   updateClient as apiUpdateClient,
+  type RegisterClientPayload,
   type UpdateClientPayload,
 } from '@/api/clients';
 import { clearAuthToken, getAuthToken, setAuthFailureHandler, setAuthToken } from '@/api/http';
@@ -34,6 +36,7 @@ type ClientContextValue = {
   isRestoring: boolean;
   saving: boolean;
   login: (email: string, password: string) => Promise<Client>;
+  register: (payload: RegisterClientPayload) => Promise<Client>;
   logout: () => void;
   deleteAccount: () => Promise<void>;
   refreshClient: () => Promise<void>;
@@ -140,8 +143,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     return () => setAuthFailureHandler(null);
   }, [clearAuthKeepSteps]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const logged = await apiLogin(email, password);
+  const persistAuthenticatedClient = useCallback(async (logged: Client) => {
     const token = getAuthToken();
     if (!token) {
       throw new Error('No se pudo conservar el token de autenticación');
@@ -149,12 +151,27 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     await persistClientId(logged._id);
     await persistClientSnapshot(logged);
     await startSessionTtl();
-    // Persiste de nuevo el JWT tras el resto de escrituras (y fuerza await).
     await persistAuthToken(token);
     setAuthToken(token);
     setClient(logged);
     return logged;
   }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const logged = await apiLogin(email, password);
+      return persistAuthenticatedClient(logged);
+    },
+    [persistAuthenticatedClient],
+  );
+
+  const register = useCallback(
+    async (payload: RegisterClientPayload) => {
+      const created = await apiRegister(payload);
+      return persistAuthenticatedClient(created);
+    },
+    [persistAuthenticatedClient],
+  );
 
   const refreshClient = useCallback(async () => {
     if (!client?._id) return;
@@ -196,13 +213,24 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       isRestoring,
       saving,
       login,
+      register,
       logout,
       deleteAccount,
       refreshClient,
       updateClientProfile,
       setClient,
     }),
-    [client, isRestoring, saving, login, logout, deleteAccount, refreshClient, updateClientProfile],
+    [
+      client,
+      isRestoring,
+      saving,
+      login,
+      register,
+      logout,
+      deleteAccount,
+      refreshClient,
+      updateClientProfile,
+    ],
   );
 
   return <ClientContext.Provider value={value}>{children}</ClientContext.Provider>;
