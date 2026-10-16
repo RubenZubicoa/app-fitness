@@ -70,7 +70,48 @@
       "expo-android-pedometer",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.regenesis.ExpoWidgetsTarget",
+          "groupIdentifier": "group.com.regenesis",
+          "widgets": [
+            {
+              "name": "RegenesisProgress",
+              "displayName": "Progreso Regenesis",
+              "description": "Pasos del día, semana del plan, días restantes y entrenos de un vistazo. Configurable y actualizado desde la app.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "systemLarge",
+                  "systemExtraLarge",
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ],
+                "configuration": {
+                  "title": "Progreso Regenesis",
+                  "description": "Elige qué destacar en el widget",
+                  "parameters": {
+                    "focus": {
+                      "title": "Vista principal",
+                      "type": "enum",
+                      "default": "overview",
+                      "values": [
+                        { "name": "Resumen", "value": "overview" },
+                        { "name": "Pasos", "value": "steps" },
+                        { "name": "Plan", "value": "plan" }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

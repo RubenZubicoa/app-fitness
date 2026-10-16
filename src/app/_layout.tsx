@@ -22,6 +22,9 @@ import { WeightsProvider } from '@/context/weights-context';
 import { WellnessProvider } from '@/context/wellness-context';
 import { WorkoutHistoryProvider } from '@/context/workout-history-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
+import { useSyncHomeWidgets } from '@/hooks/use-sync-home-widgets';
+
+import '@/widgets/regenesis-progress';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,6 +32,7 @@ function RootNavigator() {
   const { scheme } = useThemePreference();
   const isDark = scheme === 'dark';
   const palette = isDark ? Colors.dark : Colors.light;
+  useSyncHomeWidgets();
 
   useEffect(() => {
     SplashScreen.hideAsync();

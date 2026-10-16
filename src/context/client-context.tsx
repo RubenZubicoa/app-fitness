@@ -29,6 +29,7 @@ import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
 import { stopBackgroundStepTracking } from '@/services/pedometer';
 import { unregisterDailyStepsBackgroundTask } from '@/services/sync-daily-steps';
+import { syncHomeWidgets } from '@/services/sync-home-widgets';
 
 type ClientContextValue = {
   client: Client | null;
@@ -58,6 +59,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
     setClient(null);
+    syncHomeWidgets({ client: null, records: [] });
   }, []);
 
   /** Fallo de auth (401): limpia credenciales pero conserva pasos del día. */
@@ -67,6 +69,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
     setClient(null);
+    syncHomeWidgets({ client: null, records: [] });
   }, []);
 
   const logout = useCallback(() => {
