@@ -122,10 +122,6 @@ export default function RegistroScreen() {
       setError('Introduce un email válido.');
       return;
     }
-    if (!trimmedPhone) {
-      setError('Introduce tu teléfono.');
-      return;
-    }
     if (!trimmedGoal) {
       setError('Indica tu objetivo.');
       return;
@@ -150,7 +146,7 @@ export default function RegistroScreen() {
         name: trimmedName,
         fullName: trimmedFullName,
         email: trimmedEmail,
-        telefono: trimmedPhone,
+        ...(trimmedPhone ? { telefono: trimmedPhone } : {}),
         contraseña: password,
         goal: trimmedGoal,
         coach: DEFAULT_COACH,
@@ -254,7 +250,7 @@ export default function RegistroScreen() {
             />
             <Field
               icon="call-outline"
-              placeholder="Teléfono"
+              placeholder="Teléfono (opcional)"
               value={telefono}
               onChangeText={(t) => {
                 setTelefono(t);

@@ -236,7 +236,7 @@ export default function DatosPersonalesScreen() {
             editable={!busy}
           />
           <Field
-            label="Teléfono"
+            label="Teléfono (opcional)"
             value={telefono}
             onChangeText={setTelefono}
             placeholder="+34 600 000 000"

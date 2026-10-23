@@ -36,7 +36,8 @@ export type RegisterClientPayload = {
   name: string;
   fullName: string;
   email: string;
-  telefono: string;
+  /** Opcional; no se envía si está vacío. */
+  telefono?: string;
   /** Contraseña en claro; se envía como `contraseña`. */
   contraseña: string;
   goal: string;
@@ -64,7 +65,9 @@ export async function registerClient(payload: RegisterClientPayload): Promise<Cl
   formData.append('name', payload.name);
   formData.append('fullName', payload.fullName);
   formData.append('email', payload.email);
-  formData.append('telefono', payload.telefono);
+  if (payload.telefono?.trim()) {
+    formData.append('telefono', payload.telefono.trim());
+  }
   formData.append('contraseña', payload.contraseña);
   formData.append('password', payload.contraseña);
   formData.append('goal', payload.goal);
