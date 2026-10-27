@@ -10,6 +10,7 @@ const CLIENT_ID_KEY = 'regenesis.clientId';
 const CLIENT_SNAPSHOT_KEY = 'regenesis.clientSnapshot';
 const SESSION_EXPIRES_KEY = 'regenesis.sessionExpiresAt';
 const ANDROID_STEPS_KEY = 'regenesis.androidSteps';
+const SHARE_STEPS_KEY_PREFIX = 'regenesis.shareStepsInCommunity.';
 
 /** Caducidad local de la sesión tras el login. */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -234,4 +235,23 @@ export async function clearAuthSessionStore(): Promise<void> {
 export async function clearSessionStore(): Promise<void> {
   await clearAuthSessionStore();
   await persistAndroidStepsCache(null);
+}
+
+function shareStepsKey(clientId: string): string {
+  return `${SHARE_STEPS_KEY_PREFIX}${clientId}`;
+}
+
+/** Preferencia persistente: publicar pasos diarios en la comunidad. */
+export async function loadShareStepsInCommunity(clientId: string): Promise<boolean> {
+  if (!clientId) return false;
+  const raw = await read(shareStepsKey(clientId));
+  return raw === '1' || raw === 'true';
+}
+
+export async function persistShareStepsInCommunity(
+  clientId: string,
+  value: boolean,
+): Promise<void> {
+  if (!clientId) return;
+  await write(shareStepsKey(clientId), value ? '1' : '0');
 }

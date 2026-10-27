@@ -18,46 +18,13 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
-export type RegenesisProgressProps = {
-  isLoggedIn: boolean;
-  clientName: string;
-  steps: number;
-  stepsGoal: number;
-  stepsProgressPct: number;
-  week: number;
-  totalWeeks: number;
-  phase: number;
-  phaseName: string;
-  daysLeft: number;
-  programProgressPct: number;
-  workoutsThisWeek: number;
-  workoutsPlanned: number;
-  updatedLabel: string;
-  /** Vista activa (también se puede ciclar con el botón del widget). */
-  viewMode: 'overview' | 'steps' | 'plan';
-};
+import {
+  EMPTY_REGENESIS_PROGRESS_PROPS,
+  type RegenesisProgressConfiguration,
+  type RegenesisProgressProps,
+} from '@/widgets/types';
 
-export type RegenesisProgressConfiguration = {
-  focus: 'overview' | 'steps' | 'plan';
-};
-
-const EMPTY_PROPS: RegenesisProgressProps = {
-  isLoggedIn: false,
-  clientName: '',
-  steps: 0,
-  stepsGoal: 10000,
-  stepsProgressPct: 0,
-  week: 1,
-  totalWeeks: 13,
-  phase: 1,
-  phaseName: 'Adaptación',
-  daysLeft: 90,
-  programProgressPct: 0,
-  workoutsThisWeek: 0,
-  workoutsPlanned: 0,
-  updatedLabel: '',
-  viewMode: 'overview',
-};
+export type { RegenesisProgressConfiguration, RegenesisProgressProps };
 
 function RegenesisProgressWidget(
   props: RegenesisProgressProps,
@@ -359,7 +326,7 @@ const RegenesisProgress = createWidget<
 >('RegenesisProgress', RegenesisProgressWidget);
 
 export function getEmptyRegenesisProgressProps(): RegenesisProgressProps {
-  return { ...EMPTY_PROPS };
+  return { ...EMPTY_REGENESIS_PROGRESS_PROPS };
 }
 
 export default RegenesisProgress;

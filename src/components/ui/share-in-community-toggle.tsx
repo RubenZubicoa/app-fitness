@@ -9,6 +9,7 @@ type ShareInCommunityToggleProps = {
   value: boolean;
   onChange: (value: boolean) => void;
   disabled?: boolean;
+  description?: string;
 };
 
 /** Permite al usuario decidir si publica el logro en la comunidad. */
@@ -16,6 +17,7 @@ export function ShareInCommunityToggle({
   value,
   onChange,
   disabled = false,
+  description = 'Solo se publicará si lo activas',
 }: ShareInCommunityToggleProps) {
   const theme = useTheme();
 
@@ -38,7 +40,7 @@ export function ShareInCommunityToggle({
       <View style={styles.copy}>
         <ThemedText type="smallBold">Compartir en comunidad</ThemedText>
         <ThemedText type="caption" themeColor="textMuted">
-          Solo se publicará si lo activas
+          {description}
         </ThemedText>
       </View>
       <Switch

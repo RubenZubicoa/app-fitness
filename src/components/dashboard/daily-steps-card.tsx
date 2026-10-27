@@ -29,17 +29,17 @@ export function DailyStepsCard() {
     current,
     liveSteps,
     pedometerStatus,
+    shareStepsInCommunity,
     loading,
     saving,
     error,
-    saveTodaySteps,
+    setShareStepsInCommunity,
     requestPedometerAccess,
   } = useDailySteps();
 
   const weekBars = useMemo(() => buildCurrentWeekBars(records), [records]);
   const todayIso = toISODate();
   const goal = resolveStepsGoal(current, records);
-  const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const todaySteps = liveSteps ?? current?.steps ?? 0;
@@ -61,11 +61,9 @@ export function DailyStepsCard() {
   const daysWithSteps = weekValues.filter((v) => v > 0).length;
 
   const updateShare = async (value: boolean) => {
-    setShareInCommunity(value);
-    if (todaySteps <= 0) return;
     setSaveError(null);
     try {
-      await saveTodaySteps(todaySteps, value);
+      await setShareStepsInCommunity(value);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'No se pudo actualizar el recuento');
     }
@@ -166,11 +164,12 @@ export function DailyStepsCard() {
       ) : null}
 
       <ShareInCommunityToggle
-        value={shareInCommunity}
+        value={shareStepsInCommunity}
         onChange={(value) => {
           void updateShare(value);
         }}
-        disabled={saving || todaySteps <= 0}
+        disabled={saving}
+        description="Se mantiene activo hasta que lo desactives"
       />
 
       <View style={styles.chartHeader}>

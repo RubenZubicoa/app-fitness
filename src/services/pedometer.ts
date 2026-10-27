@@ -13,9 +13,13 @@ type AndroidPedometerModule = typeof import('expo-android-pedometer');
 
 function getAndroidPedometer(): AndroidPedometerModule | null {
   if (Platform.OS !== 'android') return null;
-  // Require dinámico: el módulo es no-op/ausente en iOS.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('expo-android-pedometer') as AndroidPedometerModule;
+  try {
+    // Require dinámico: ausente en iOS y en Expo Go.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-android-pedometer') as AndroidPedometerModule;
+  } catch {
+    return null;
+  }
 }
 
 function localDayBounds(isoDate: string): { start: Date; end: Date } {

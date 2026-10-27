@@ -12,6 +12,7 @@ import {
   isSessionWithinTtl,
   loadAuthToken,
   loadClientId,
+  loadShareStepsInCommunity,
 } from '@/api/session-store';
 import {
   getPedometerStatus,
@@ -60,6 +61,7 @@ export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
   }
 
   const records = await fetchClientDailySteps(clientId);
+  const shareInCommunity = await loadShareStepsInCommunity(clientId);
   const today = toISODate();
   // iOS: Core Motion guarda ~7 días. Android (expo-android-pedometer): histórico local.
   const lookbackDays = Platform.OS === 'ios' ? 6 : Platform.OS === 'android' ? 1 : 0;
@@ -86,11 +88,20 @@ export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
     }
 
     if (next <= 0 && !existing) continue;
-    if (existing && existing.steps === next) continue;
+
+    // La preferencia de comunidad solo aplica al día actual; no reescribe días pasados.
+    const applyShare = date === today;
+    const shareChanged =
+      applyShare && existing?.shareInCommunity !== shareInCommunity;
+    if (existing && existing.steps === next && !shareChanged) continue;
 
     const goal = resolveStepsGoal(existing, records);
     if (existing) {
-      const updated = await updateDailyStepsApi(existing._id, { steps: next, goal });
+      const updated = await updateDailyStepsApi(existing._id, {
+        steps: next,
+        goal,
+        ...(applyShare ? { shareInCommunity } : {}),
+      });
       const idx = records.findIndex((item) => item._id === updated._id);
       if (idx >= 0) records[idx] = updated;
       else records.push(updated);
@@ -100,6 +111,7 @@ export async function syncPedometerToApi(): Promise<PedometerSyncResult> {
         date,
         steps: next,
         goal,
+        ...(applyShare ? { shareInCommunity } : {}),
       });
       records.push(created);
     }

@@ -6,13 +6,17 @@ import {
   syncPedometerToApi,
 } from '@/services/sync-daily-steps';
 
-if (!TaskManager.isTaskDefined(SYNC_DAILY_STEPS_TASK)) {
-  TaskManager.defineTask(SYNC_DAILY_STEPS_TASK, async () => {
-    try {
-      await syncPedometerToApi();
-      return BackgroundTask.BackgroundTaskResult.Success;
-    } catch {
-      return BackgroundTask.BackgroundTaskResult.Failed;
-    }
-  });
+try {
+  if (!TaskManager.isTaskDefined(SYNC_DAILY_STEPS_TASK)) {
+    TaskManager.defineTask(SYNC_DAILY_STEPS_TASK, async () => {
+      try {
+        await syncPedometerToApi();
+        return BackgroundTask.BackgroundTaskResult.Success;
+      } catch {
+        return BackgroundTask.BackgroundTaskResult.Failed;
+      }
+    });
+  }
+} catch {
+  // En Expo Go / entornos sin background tasks, la app sigue usable.
 }

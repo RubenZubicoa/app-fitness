@@ -15,6 +15,10 @@ import {
   fetchClientDailySteps,
   updateDailySteps as updateDailyStepsApi,
 } from '@/api/daily-steps';
+import {
+  loadShareStepsInCommunity,
+  persistShareStepsInCommunity,
+} from '@/api/session-store';
 import { useClient } from '@/context/client-context';
 import {
   beginAndroidSession,
@@ -44,11 +48,15 @@ type DailyStepsContextValue = {
   pedometerStatus: PedometerStatus;
   /** Registros de la semana calendario actual (L–D). */
   weekRecords: DailySteps[];
+  /** Preferencia persistente de publicar pasos en comunidad. */
+  shareStepsInCommunity: boolean;
   loading: boolean;
   saving: boolean;
   error: string | null;
   refreshDailySteps: () => Promise<void>;
   requestPedometerAccess: () => Promise<void>;
+  /** Activa/desactiva publicar pasos (persiste y actualiza el registro de hoy). */
+  setShareStepsInCommunity: (value: boolean) => Promise<void>;
   /** Crea o actualiza los pasos de una fecha concreta. */
   saveStepsForDate: (
     date: string,
@@ -69,8 +77,10 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [liveSteps, setLiveSteps] = useState<number | null>(null);
   const [pedometerStatus, setPedometerStatus] = useState<PedometerStatus>('idle');
+  const [shareStepsInCommunity, setShareStepsInCommunityState] = useState(false);
   const [accessKey, setAccessKey] = useState(0);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sharePrefRef = useRef(false);
 
   const refreshDailySteps = useCallback(async (options?: { silent?: boolean }) => {
     if (!client?._id) {
@@ -95,6 +105,27 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshDailySteps();
   }, [refreshDailySteps]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!client?._id) {
+      setShareStepsInCommunityState(false);
+      sharePrefRef.current = false;
+      return;
+    }
+
+    const hydrateSharePreference = async () => {
+      const saved = await loadShareStepsInCommunity(client._id);
+      if (cancelled) return;
+      sharePrefRef.current = saved;
+      setShareStepsInCommunityState(saved);
+    };
+
+    void hydrateSharePreference();
+    return () => {
+      cancelled = true;
+    };
+  }, [client?._id]);
 
   const current = useMemo(
     () => pickDailyStepsForDate(records, toISODate()),
@@ -135,6 +166,8 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       const goal = resolveStepsGoal(existing, records);
       // Nunca bajar el valor ya registrado (p. ej. re-sync del sensor).
       const nextSteps = Math.max(existing?.steps ?? 0, Math.round(steps));
+      const share =
+        shareInCommunity != null ? shareInCommunity : sharePrefRef.current;
 
       setSaving(true);
       setError(null);
@@ -142,7 +175,7 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
         const payload = {
           steps: nextSteps,
           goal,
-          ...(shareInCommunity != null ? { shareInCommunity } : {}),
+          shareInCommunity: share,
         };
         const updated = existing
           ? await updateDailyStepsApi(existing._id, payload)
@@ -168,6 +201,25 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       await saveStepsForDate(toISODate(), steps, shareInCommunity);
     },
     [saveStepsForDate],
+  );
+
+  const setShareStepsInCommunity = useCallback(
+    async (value: boolean) => {
+      if (!client?._id) return;
+
+      sharePrefRef.current = value;
+      setShareStepsInCommunityState(value);
+      await persistShareStepsInCommunity(client._id, value);
+
+      const todaySteps = Math.max(
+        liveSteps ?? 0,
+        pickDailyStepsForDate(records, toISODate())?.steps ?? 0,
+      );
+      if (todaySteps <= 0) return;
+
+      await saveTodaySteps(todaySteps, value);
+    },
+    [client?._id, liveSteps, records, saveTodaySteps],
   );
 
   const requestPedometerAccess = useCallback(async () => {
@@ -270,11 +322,13 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       liveSteps,
       pedometerStatus,
       weekRecords,
+      shareStepsInCommunity,
       loading,
       saving,
       error,
       refreshDailySteps,
       requestPedometerAccess,
+      setShareStepsInCommunity,
       saveStepsForDate,
       saveTodaySteps,
     }),
@@ -284,11 +338,13 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       liveSteps,
       pedometerStatus,
       weekRecords,
+      shareStepsInCommunity,
       loading,
       saving,
       error,
       refreshDailySteps,
       requestPedometerAccess,
+      setShareStepsInCommunity,
       saveStepsForDate,
       saveTodaySteps,
     ],

@@ -8,6 +8,8 @@ export type DailySteps = {
   steps: number;
   /** Objetivo diario de pasos. */
   goal?: number;
+  /** Si los pasos de ese día se publican en la comunidad. */
+  shareInCommunity?: boolean;
 };
 
 export function normalizeDailySteps(raw: Record<string, unknown>): DailySteps {
@@ -16,6 +18,7 @@ export function normalizeDailySteps(raw: Record<string, unknown>): DailySteps {
     goalRaw == null || goalRaw === ''
       ? undefined
       : Number(goalRaw);
+  const shareRaw = raw.shareInCommunity;
 
   return {
     _id: normalizeId(raw._id),
@@ -23,6 +26,14 @@ export function normalizeDailySteps(raw: Record<string, unknown>): DailySteps {
     date: String(raw.date ?? '').slice(0, 10),
     steps: Number(raw.steps ?? 0),
     goal: goal != null && Number.isFinite(goal) ? goal : undefined,
+    shareInCommunity:
+      typeof shareRaw === 'boolean'
+        ? shareRaw
+        : shareRaw === 'true' || shareRaw === 1 || shareRaw === '1'
+          ? true
+          : shareRaw === 'false' || shareRaw === 0 || shareRaw === '0'
+            ? false
+            : undefined,
   };
 }
 

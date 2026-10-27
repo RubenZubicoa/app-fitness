@@ -1,3 +1,4 @@
+import { isRunningInExpoGo } from 'expo';
 import { Platform } from 'react-native';
 
 import { getCurrentPhase, getDaysLeft, getProgramProgress } from '@/data/program';
@@ -9,10 +10,10 @@ import {
   type DailySteps,
 } from '@/types/daily-steps';
 import { countWorkoutsInWeek, type WorkoutHistoryEntry } from '@/types/workout-history';
-import RegenesisProgress, {
-  getEmptyRegenesisProgressProps,
+import {
+  EMPTY_REGENESIS_PROGRESS_PROPS,
   type RegenesisProgressProps,
-} from '@/widgets/regenesis-progress';
+} from '@/widgets/types';
 
 export type HomeWidgetSyncInput = {
   client: Client | null;
@@ -21,6 +22,26 @@ export type HomeWidgetSyncInput = {
   workoutHistory?: WorkoutHistoryEntry[];
   workoutsPlanned?: number;
 };
+
+type ProgressWidget = {
+  updateSnapshot: (props: RegenesisProgressProps) => void;
+  getTimeline: () => Promise<{ props: RegenesisProgressProps }[]>;
+};
+
+/** Widgets nativos no existen en Expo Go; solo en builds iOS reales. */
+function canUseHomeWidgets(): boolean {
+  return Platform.OS === 'ios' && !isRunningInExpoGo();
+}
+
+function loadProgressWidget(): ProgressWidget | null {
+  if (!canUseHomeWidgets()) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return (require('@/widgets/regenesis-progress') as { default: ProgressWidget }).default;
+  } catch {
+    return null;
+  }
+}
 
 function formatUpdatedLabel(date = new Date()): string {
   const hh = String(date.getHours()).padStart(2, '0');
@@ -35,7 +56,7 @@ export function buildRegenesisProgressProps(
   const { client, records, liveSteps, workoutHistory = [], workoutsPlanned = 0 } = input;
 
   if (!client) {
-    return getEmptyRegenesisProgressProps();
+    return { ...EMPTY_REGENESIS_PROGRESS_PROPS };
   }
 
   const today = pickDailyStepsForDate(records, toISODate());
@@ -68,9 +89,11 @@ export function buildRegenesisProgressProps(
   };
 }
 
-async function readCurrentViewMode(): Promise<RegenesisProgressProps['viewMode']> {
+async function readCurrentViewMode(
+  widget: ProgressWidget,
+): Promise<RegenesisProgressProps['viewMode']> {
   try {
-    const timeline = await RegenesisProgress.getTimeline();
+    const timeline = await widget.getTimeline();
     const latest = timeline.at(-1)?.props;
     if (latest?.viewMode === 'steps' || latest?.viewMode === 'plan' || latest?.viewMode === 'overview') {
       return latest.viewMode;
@@ -81,17 +104,18 @@ async function readCurrentViewMode(): Promise<RegenesisProgressProps['viewMode']
   return 'overview';
 }
 
-/** Empuja el snapshot personalizado al widget de pantalla de inicio (solo iOS). */
+/** Empuja el snapshot al widget (solo iOS con build nativo; no-op en Expo Go). */
 export function syncHomeWidgets(input: HomeWidgetSyncInput): void {
-  if (Platform.OS !== 'ios') return;
+  if (!canUseHomeWidgets()) return;
 
   void (async () => {
     try {
-      const viewMode = input.client ? await readCurrentViewMode() : 'overview';
-      const props = buildRegenesisProgressProps(input, viewMode);
-      RegenesisProgress.updateSnapshot(props);
+      const widget = loadProgressWidget();
+      if (!widget) return;
+      const viewMode = input.client ? await readCurrentViewMode(widget) : 'overview';
+      widget.updateSnapshot(buildRegenesisProgressProps(input, viewMode));
     } catch {
-      // El módulo nativo puede no estar disponible en Expo Go / web stubs.
+      // Stub / módulo no disponible.
     }
   })();
 }

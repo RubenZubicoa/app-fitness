@@ -38,9 +38,9 @@ const menuItems: {
     title: 'Comunidad',
     subtitle: 'Logros, fotos y ranking de la comunidad',
     icon: 'people-outline',
-    comingSoon: true,
+    href: '/social',
     tone: 'teal',
-    badge: 'Próximamente',
+    badge: 'Activa',
   },
   {
     title: 'Revisiones',
