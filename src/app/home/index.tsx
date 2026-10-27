@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { DailyStepsCard } from '@/components/dashboard/daily-steps-card';
 import { PhaseProgress } from '@/components/dashboard/phase-progress';
+import { UpcomingReviewReminder } from '@/components/dashboard/upcoming-review-reminder';
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -131,6 +132,8 @@ export default function DashboardScreen() {
       <View style={{ marginTop: -Spacing.five }}>
         <PhaseProgress currentPhaseId={client.phase} />
       </View>
+
+      <UpcomingReviewReminder />
 
       <View style={styles.statsRow}>
         <StatTile
