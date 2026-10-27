@@ -45,6 +45,36 @@ function parseOptionalNumber(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Solo dígitos enteros 1–100 (vacío permitido). */
+function sanitizeWellnessInput(text: string): string {
+  const digits = text.replace(/\D/g, '');
+  if (!digits) return '';
+  const n = Number(digits);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return String(Math.min(100, n));
+}
+
+/** Decimal > 0 (vacío permitido). Solo dígitos y un separador. */
+function sanitizePositiveDecimalInput(text: string): string {
+  let cleaned = text.replace(/,/g, '.').replace(/[^\d.]/g, '');
+  const firstDot = cleaned.indexOf('.');
+  if (firstDot !== -1) {
+    cleaned =
+      cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+  }
+  if (!cleaned || cleaned === '.') return '';
+  // Permitir "0." mientras se escribe un decimal (p. ej. 0.5).
+  if (cleaned === '0.') return cleaned;
+  if (cleaned.endsWith('.')) {
+    const head = Number(cleaned.slice(0, -1));
+    if (!Number.isFinite(head) || head < 0) return '';
+    return cleaned;
+  }
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return cleaned;
+}
+
 export default function AnadirRegistroScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -104,11 +134,15 @@ export default function AnadirRegistroScreen() {
   if (!client) return null;
 
   const updateMeasure = (id: string, value: string) => {
-    setMeasureValues((prev) => ({ ...prev, [id]: value }));
+    setMeasureValues((prev) => ({ ...prev, [id]: sanitizePositiveDecimalInput(value) }));
+  };
+
+  const updateWeight = (value: string) => {
+    setWeightValue(sanitizePositiveDecimalInput(value));
   };
 
   const updateWellness = (id: string, value: string) => {
-    setWellnessValues((prev) => ({ ...prev, [id]: value }));
+    setWellnessValues((prev) => ({ ...prev, [id]: sanitizeWellnessInput(value) }));
   };
 
   const pickPhotos = async () => {
@@ -169,7 +203,7 @@ export default function AnadirRegistroScreen() {
         const value = parseOptionalNumber(measureValues[master._id] ?? '');
         if (value == null) continue;
         if (value <= 0) {
-          throw new Error(`${master.label}: introduce un valor válido`);
+          throw new Error(`${master.label}: introduce un número mayor que 0`);
         }
         const previous = latestByMeasure.find((m) => m.MeasurementId === master._id);
         const delta = previous ? Number((value - previous.value).toFixed(1)) : 0;
@@ -186,8 +220,8 @@ export default function AnadirRegistroScreen() {
       for (const master of wellnessMasters) {
         const value = parseOptionalNumber(wellnessValues[master._id] ?? '');
         if (value == null) continue;
-        if (value < 0 || value > 100) {
-          throw new Error(`${master.label}: usa un valor entre 0 y 100`);
+        if (value <= 0 || value > 100) {
+          throw new Error(`${master.label}: usa un número entre 1 y 100`);
         }
         await createWellness({
           clientId: client._id,
@@ -247,10 +281,11 @@ export default function AnadirRegistroScreen() {
               },
             ]}
             value={weightValue}
-            onChangeText={setWeightValue}
+            onChangeText={updateWeight}
             placeholder={weight ? String(getLatestWeightValue(weight)) : 'Ej. 65.4'}
             placeholderTextColor={theme.textMuted}
             keyboardType="decimal-pad"
+            inputMode="decimal"
           />
         </Card>
       </View>
@@ -283,6 +318,7 @@ export default function AnadirRegistroScreen() {
                     placeholder="—"
                     placeholderTextColor={theme.textMuted}
                     keyboardType="decimal-pad"
+                    inputMode="decimal"
                   />
                 </View>
               ))}
@@ -295,7 +331,7 @@ export default function AnadirRegistroScreen() {
         <SectionHeader title="Sensaciones diarias" />
         <Card style={styles.sectionCard}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-            Valora cada sensación de 0 a 100.
+            Valora cada sensación de 1 a 100 (solo números).
           </ThemedText>
           {wellnessMasters.length === 0 ? (
             <ThemedText type="body" themeColor="textSecondary">
@@ -326,9 +362,10 @@ export default function AnadirRegistroScreen() {
                     ]}
                     value={wellnessValues[master._id] ?? ''}
                     onChangeText={(text) => updateWellness(master._id, text)}
-                    placeholder="0–100"
+                    placeholder="1–100"
                     placeholderTextColor={theme.textMuted}
                     keyboardType="number-pad"
+                    inputMode="numeric"
                   />
                 </View>
               ))}

@@ -142,6 +142,7 @@ export default function DashboardScreen() {
           unit={weight?.unit ?? 'kg'}
           delta={weightDeltaLabel}
           deltaTone={weightDeltaTone}
+          onPress={() => router.push('/home/progreso')}
         />
         <StatTile
           icon="barbell-outline"
@@ -166,6 +167,7 @@ export default function DashboardScreen() {
               ? 'up'
               : 'neutral'
           }
+          onPress={() => router.push('/home/entreno')}
         />
       </View>
 

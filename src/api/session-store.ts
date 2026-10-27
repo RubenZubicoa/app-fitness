@@ -11,6 +11,7 @@ const CLIENT_SNAPSHOT_KEY = 'regenesis.clientSnapshot';
 const SESSION_EXPIRES_KEY = 'regenesis.sessionExpiresAt';
 const ANDROID_STEPS_KEY = 'regenesis.androidSteps';
 const SHARE_STEPS_KEY_PREFIX = 'regenesis.shareStepsInCommunity.';
+const THEME_PREFERENCE_KEY = 'regenesis.themePreference';
 
 /** Caducidad local de la sesión tras el login. */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -254,4 +255,19 @@ export async function persistShareStepsInCommunity(
 ): Promise<void> {
   if (!clientId) return;
   await write(shareStepsKey(clientId), value ? '1' : '0');
+}
+
+export type StoredThemePreference = 'system' | 'light' | 'dark';
+
+/** Preferencia de tema (claro / oscuro / sistema). */
+export async function loadThemePreference(): Promise<StoredThemePreference | null> {
+  const raw = await read(THEME_PREFERENCE_KEY);
+  if (raw === 'system' || raw === 'light' || raw === 'dark') return raw;
+  return null;
+}
+
+export async function persistThemePreference(
+  preference: StoredThemePreference,
+): Promise<void> {
+  await write(THEME_PREFERENCE_KEY, preference);
 }

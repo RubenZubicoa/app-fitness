@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ type StatTileProps = {
   unit?: string;
   delta?: string;
   deltaTone?: 'up' | 'down' | 'neutral';
+  onPress?: () => void;
 };
 
 /** Tarjeta compacta de métrica con icono, valor y variación. */
@@ -28,13 +29,14 @@ export function StatTile({
   unit,
   delta,
   deltaTone = 'neutral',
+  onPress,
 }: StatTileProps) {
   const theme = useTheme();
   const deltaColor =
     deltaTone === 'up' ? theme.success : deltaTone === 'down' ? theme.danger : theme.textMuted;
   const deltaIcon = deltaTone === 'up' ? 'trending-up' : deltaTone === 'down' ? 'trending-down' : 'remove';
 
-  return (
+  const content = (
     <Card style={styles.card}>
       <IconBadge name={icon} color={iconColor} background={iconBg} size={38} />
       <View style={styles.valueRow}>
@@ -58,9 +60,27 @@ export function StatTile({
       )}
     </Card>
   );
+
+  if (!onPress) return content;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityRole="button">
+      {content}
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
+  pressable: {
+    flex: 1,
+    minWidth: 120,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
   card: {
     flex: 1,
     gap: Spacing.two,
