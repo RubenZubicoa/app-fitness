@@ -23,7 +23,11 @@ type ProgressImagesContextValue = {
   error: string | null;
   refreshProgressImages: () => Promise<void>;
   deleteProgressImage: (id: string) => Promise<void>;
-  replaceProgressImage: (id: string, imageUri: string) => Promise<void>;
+  replaceProgressImage: (
+    id: string,
+    imageUri: string,
+    mimeType?: string | null,
+  ) => Promise<void>;
 };
 
 const ProgressImagesContext = createContext<ProgressImagesContextValue | undefined>(undefined);
@@ -74,12 +78,18 @@ export function ProgressImagesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const replaceProgressImage = useCallback(
-    async (id: string, imageUri: string) => {
+    async (id: string, imageUri: string, mimeType?: string | null) => {
       if (!client?._id) throw new Error('Cliente no disponible');
       setSaving(true);
       setError(null);
       try {
-        await replaceProgressImageApi(id, client._id, imageUri, `progress-${Date.now()}.jpg`);
+        await replaceProgressImageApi(
+          id,
+          client._id,
+          imageUri,
+          `progress-${Date.now()}.jpg`,
+          mimeType,
+        );
         const next = await fetchProgressImages(client._id);
         setImages(next);
       } catch (err) {

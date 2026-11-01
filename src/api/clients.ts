@@ -1,6 +1,5 @@
-import { Platform } from 'react-native';
-
 import { apiFetch, apiRequest, extractAuthToken, parseJson, setAuthToken } from '@/api/http';
+import { createImageFormPart } from '@/api/prepare-image-upload';
 import { normalizeClient, type Client } from '@/types/client';
 
 function clientFromAuthResponse(raw: Record<string, unknown>): Client {
@@ -143,24 +142,10 @@ async function appendAvatarFile(
   formData: FormData,
   imageUri: string,
   filename: string,
+  mimeType?: string | null,
 ): Promise<void> {
-  if (Platform.OS === 'web') {
-    const response = await fetch(imageUri);
-    if (!response.ok) {
-      throw new Error('No se pudo leer la imagen seleccionada');
-    }
-    const blob = await response.blob();
-    const type =
-      blob.type && blob.type !== 'application/octet-stream' ? blob.type : 'image/jpeg';
-    formData.append('avatar', new File([blob], filename, { type }));
-    return;
-  }
-
-  formData.append('avatar', {
-    uri: imageUri,
-    name: filename,
-    type: 'image/jpeg',
-  } as unknown as Blob);
+  const part = await createImageFormPart(imageUri, filename, mimeType);
+  formData.append('avatar', part);
 }
 
 /**

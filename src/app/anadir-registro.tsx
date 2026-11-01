@@ -28,6 +28,7 @@ import { latestMeasurementsByType } from '@/types/measurement';
 type ProgressPhoto = {
   id: string;
   uri: string;
+  mimeType?: string | null;
 };
 
 function newPhotoId(): string {
@@ -168,7 +169,11 @@ export default function AnadirRegistroScreen() {
 
     const newPhotos = result.assets
       .filter((asset) => asset.uri)
-      .map((asset) => ({ id: newPhotoId(), uri: asset.uri! }));
+      .map((asset) => ({
+        id: newPhotoId(),
+        uri: asset.uri!,
+        mimeType: asset.mimeType,
+      }));
 
     setPhotos((prev) => [...prev, ...newPhotos]);
   };
@@ -184,6 +189,14 @@ export default function AnadirRegistroScreen() {
 
     const date = todayIso();
     const weightNum = parseOptionalNumber(weightValue);
+
+    console.log('[añadir-registro] Guardar pulsado', {
+      clientId: client?._id,
+      date,
+      photos: photos.length,
+      photoUris: photos.map((p) => ({ uri: p.uri, mimeType: p.mimeType })),
+      weight: weightNum,
+    });
 
     try {
       if (weightNum != null) {
@@ -233,20 +246,37 @@ export default function AnadirRegistroScreen() {
       await refreshWellness();
 
       if (photos.length > 0) {
+        console.log('[añadir-registro] Subiendo imágenes al back…', {
+          count: photos.length,
+          clientId: client._id,
+        });
         await Promise.all(
-          photos.map((photo, index) =>
-            uploadProgressImage(
+          photos.map((photo, index) => {
+            const filename = `progress-${Date.now()}-${index}.jpg`;
+            console.log('[añadir-registro] uploadProgressImage', {
+              index,
+              filename,
+              uri: photo.uri,
+              mimeType: photo.mimeType,
+            });
+            return uploadProgressImage(
               client._id,
               photo.uri,
-              `progress-${Date.now()}-${index}.jpg`,
-            ),
-          ),
+              filename,
+              photo.mimeType,
+            );
+          }),
         );
+        console.log('[añadir-registro] Imágenes subidas OK');
         await refreshProgressImages();
+      } else {
+        console.log('[añadir-registro] Sin fotos; se omite POST /api/progress-images');
       }
 
+      console.log('[añadir-registro] Guardado completo');
       router.back();
     } catch (err) {
+      console.error('[añadir-registro] Error al guardar', err);
       setError(err instanceof Error ? err.message : 'No se pudo guardar el registro');
     } finally {
       setSaving(false);

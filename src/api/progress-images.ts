@@ -1,30 +1,30 @@
 import { Platform } from 'react-native';
 
 import { apiFetch, apiRequest, parseJson } from '@/api/http';
+import { createImageFormPart } from '@/api/prepare-image-upload';
+import { API_URL } from '@/constants/api';
 import { normalizeProgressImage, type ProgressImage } from '@/types/progress-image';
 
 async function appendImageField(
   formData: FormData,
   imageUri: string,
   filename: string,
+  mimeType?: string | null,
 ): Promise<void> {
-  if (Platform.OS === 'web') {
-    const response = await fetch(imageUri);
-    if (!response.ok) {
-      throw new Error('No se pudo leer la imagen seleccionada');
-    }
-    const blob = await response.blob();
-    const type =
-      blob.type && blob.type !== 'application/octet-stream' ? blob.type : 'image/jpeg';
-    formData.append('image', new File([blob], filename, { type }));
-    return;
-  }
+  console.log('[progress-images] appendImageField', {
+    imageUri,
+    filename,
+    mimeType,
+    platform: Platform.OS,
+  });
 
-  formData.append('image', {
-    uri: imageUri,
-    name: filename,
-    type: 'image/jpeg',
-  } as unknown as Blob);
+  const part = await createImageFormPart(imageUri, filename, mimeType);
+  console.log('[progress-images] FormData image field listo', {
+    filename,
+    partType: part?.constructor?.name,
+    size: typeof part.size === 'number' ? part.size : undefined,
+  });
+  formData.append('image', part);
 }
 
 /** GET /api/progress-images?clientId=... */
@@ -51,11 +51,21 @@ export async function uploadProgressImage(
   clientId: string,
   imageUri: string,
   filename = 'photo.jpg',
+  mimeType?: string | null,
 ): Promise<ProgressImage> {
+  console.log('[progress-images] POST /api/progress-images inicio', {
+    apiUrl: API_URL,
+    clientId,
+    imageUri,
+    filename,
+    mimeType,
+  });
+
   const formData = new FormData();
   formData.append('clientId', clientId);
-  await appendImageField(formData, imageUri, filename);
+  await appendImageField(formData, imageUri, filename, mimeType);
 
+  console.log('[progress-images] Enviando FormData al back…');
   const res = await apiFetch(
     '/api/progress-images',
     { method: 'POST', body: formData },
@@ -63,14 +73,22 @@ export async function uploadProgressImage(
   );
 
   const data = await parseJson(res);
+  console.log('[progress-images] Respuesta back', {
+    status: res.status,
+    ok: res.ok,
+    data,
+  });
+
   if (!res.ok) {
     const message =
       data && typeof data === 'object' && 'message' in data
         ? String((data as { message?: string }).message)
         : `Error ${res.status}`;
+    console.error('[progress-images] Subida fallida', message);
     throw new Error(message);
   }
 
+  console.log('[progress-images] Subida OK');
   return normalizeProgressImage(data as Record<string, unknown>);
 }
 
@@ -92,8 +110,9 @@ export async function replaceProgressImage(
   clientId: string,
   imageUri: string,
   filename = 'photo.jpg',
+  mimeType?: string | null,
 ): Promise<ProgressImage> {
-  const uploaded = await uploadProgressImage(clientId, imageUri, filename);
+  const uploaded = await uploadProgressImage(clientId, imageUri, filename, mimeType);
   try {
     await deleteProgressImage(existingId);
   } catch {

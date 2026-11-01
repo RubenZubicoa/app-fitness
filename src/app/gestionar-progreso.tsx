@@ -210,7 +210,8 @@ export default function GestionarProgresoScreen() {
     if (result.canceled || !result.assets[0]?.uri) return;
 
     try {
-      await replaceProgressImage(id, result.assets[0].uri);
+      const asset = result.assets[0];
+      await replaceProgressImage(id, asset.uri, asset.mimeType);
       setActionError(null);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'No se pudo reemplazar la foto');

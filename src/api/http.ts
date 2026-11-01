@@ -1,9 +1,9 @@
-import { API_URL } from '@/constants/api';
 import {
   loadAuthToken,
   persistAuthToken,
   persistSessionExpiresAt,
 } from '@/api/session-store';
+import { API_URL } from '@/constants/api';
 
 type ApiErrorBody = { message?: string };
 type AuthFailureHandler = () => void;
@@ -140,7 +140,9 @@ export async function apiFetch(
       ...init,
       headers,
     });
-  } catch {
+  } catch (error) {
+    console.error('[apiFetch] Error al conectar con el servidor', error);
+
     throw new Error('No se pudo conectar con el servidor. ¿Está el API en marcha?');
   }
 
