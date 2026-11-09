@@ -242,6 +242,49 @@ export default function NutricionScreen() {
                                 {option.description}
                               </ThemedText>
                             )}
+                            {!!option.ingredients?.length && (
+                              <View
+                                style={[
+                                  styles.mealIngredients,
+                                  {
+                                    backgroundColor: theme.goldSoft,
+                                    borderColor: theme.border,
+                                  },
+                                ]}>
+                                <View style={styles.mealIngredientsHeader}>
+                                  <Ionicons
+                                    name="leaf-outline"
+                                    size={13}
+                                    color={theme.gold}
+                                  />
+                                  <ThemedText
+                                    type="caption"
+                                    style={[styles.mealIngredientsTitle, { color: theme.gold }]}>
+                                    Ingredientes
+                                  </ThemedText>
+                                </View>
+                                <View style={styles.mealIngredientsList}>
+                                  {option.ingredients.map((ingredient, ingredientIdx) => (
+                                    <View
+                                      key={`${option.name}-ing-${ingredientIdx}`}
+                                      style={styles.mealIngredientRow}>
+                                      <View
+                                        style={[
+                                          styles.mealIngredientDot,
+                                          { backgroundColor: theme.gold },
+                                        ]}
+                                      />
+                                      <ThemedText
+                                        type="caption"
+                                        themeColor="textSecondary"
+                                        style={styles.mealIngredientText}>
+                                        {ingredient}
+                                      </ThemedText>
+                                    </View>
+                                  ))}
+                                </View>
+                              </View>
+                            )}
                           </View>
                           <Badge label={`${option.kcal} kcal`} tone="gold" />
                         </View>
@@ -478,6 +521,45 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   mealOptionBody: { flex: 1, gap: 2 },
+  mealIngredients: {
+    marginTop: Spacing.two,
+    marginRight: Spacing.one,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.two + 2,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.two,
+  },
+  mealIngredientsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mealIngredientsTitle: {
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    fontSize: 10,
+  },
+  mealIngredientsList: {
+    gap: 7,
+  },
+  mealIngredientRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  mealIngredientDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginTop: 5,
+    opacity: 0.85,
+  },
+  mealIngredientText: {
+    flex: 1,
+    lineHeight: 17,
+  },
   shopProgress: { gap: Spacing.two, marginBottom: Spacing.three },
   track: {
     height: 8,

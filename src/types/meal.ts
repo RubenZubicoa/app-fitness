@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import { normalizeId } from '@/types/program';
+import { normalizeId } from "@/types/program";
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -9,6 +9,7 @@ export type MealOption = {
   name: string;
   kcal: number;
   description?: string;
+  ingredients?: string[];
 };
 
 export type MealSlot = {
@@ -25,19 +26,32 @@ export type Meal = {
 };
 
 function asIonicon(value: unknown): IoniconName {
-  const name = String(value ?? 'restaurant-outline');
+  const name = String(value ?? "restaurant-outline");
   if (name in Ionicons.glyphMap) return name as IoniconName;
-  return 'restaurant-outline';
+  return "restaurant-outline";
+}
+
+function normalizeIngredients(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const list = raw
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean);
+  return list.length > 0 ? list : undefined;
 }
 
 function normalizeMealOption(raw: unknown): MealOption {
   const item = (raw ?? {}) as Record<string, unknown>;
   const description =
     item.description !== undefined ? String(item.description) : undefined;
+  // Back puede enviar "ingredientes" o "ingredients".
+  const ingredients =
+    normalizeIngredients(item.ingredients) ??
+    normalizeIngredients(item.ingredientes);
   return {
-    name: String(item.name ?? ''),
+    name: String(item.name ?? ""),
     kcal: Number(item.kcal ?? 0),
     ...(description ? { description } : {}),
+    ...(ingredients ? { ingredients } : {}),
   };
 }
 
@@ -50,8 +64,8 @@ function normalizeMealSlot(raw: unknown): MealSlot {
       ? slot.items
       : [];
   return {
-    label: String(slot.label ?? ''),
-    time: String(slot.time ?? ''),
+    label: String(slot.label ?? ""),
+    time: String(slot.time ?? ""),
     icon: asIonicon(slot.icon),
     options: optionsRaw.map(normalizeMealOption),
   };
