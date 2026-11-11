@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
+import {
+  listProgressPosePhotos,
+  ProgressPosePhotoPicker,
+  type ProgressPosePhoto,
+} from '@/components/progress/progress-pose-photo-picker';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,16 +27,7 @@ import { uploadProgressImage } from '@/api/progress-images';
 import { useTheme } from '@/hooks/use-theme';
 import { getLatestWeightValue } from '@/types/weight';
 import { latestMeasurementsByType } from '@/types/measurement';
-
-type ProgressPhoto = {
-  id: string;
-  uri: string;
-  mimeType?: string | null;
-};
-
-function newPhotoId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
+import type { ProgressImagePose } from '@/types/progress-image';
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -93,7 +87,9 @@ export default function AnadirRegistroScreen() {
   const [weightValue, setWeightValue] = useState('');
   const [measureValues, setMeasureValues] = useState<Record<string, string>>({});
   const [wellnessValues, setWellnessValues] = useState<Record<string, string>>({});
-  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [posePhotos, setPosePhotos] = useState<
+    Partial<Record<ProgressImagePose, ProgressPosePhoto>>
+  >({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
@@ -146,42 +142,6 @@ export default function AnadirRegistroScreen() {
     setWellnessValues((prev) => ({ ...prev, [id]: sanitizeWellnessInput(value) }));
   };
 
-  const pickPhotos = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      const message = 'Necesitamos permiso para acceder a tu galería.';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Permiso requerido', message);
-      }
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsMultipleSelection: true,
-      selectionLimit: 0,
-    });
-
-    if (result.canceled || result.assets.length === 0) return;
-
-    const newPhotos = result.assets
-      .filter((asset) => asset.uri)
-      .map((asset) => ({
-        id: newPhotoId(),
-        uri: asset.uri!,
-        mimeType: asset.mimeType,
-      }));
-
-    setPhotos((prev) => [...prev, ...newPhotos]);
-  };
-
-  const removePhoto = (id: string) => {
-    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
-  };
-
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
@@ -189,12 +149,13 @@ export default function AnadirRegistroScreen() {
 
     const date = todayIso();
     const weightNum = parseOptionalNumber(weightValue);
+    const photos = listProgressPosePhotos(posePhotos);
 
     console.log('[añadir-registro] Guardar pulsado', {
       clientId: client?._id,
       date,
       photos: photos.length,
-      photoUris: photos.map((p) => ({ uri: p.uri, mimeType: p.mimeType })),
+      photoUris: photos.map((p) => ({ uri: p.uri, mimeType: p.mimeType, pose: p.pose })),
       weight: weightNum,
     });
 
@@ -258,12 +219,14 @@ export default function AnadirRegistroScreen() {
               filename,
               uri: photo.uri,
               mimeType: photo.mimeType,
+              pose: photo.pose,
             });
             return uploadProgressImage(
               client._id,
               photo.uri,
               filename,
               photo.mimeType,
+              photo.pose,
             );
           }),
         );
@@ -407,37 +370,9 @@ export default function AnadirRegistroScreen() {
       <View>
         <SectionHeader title="Fotos de progreso" />
         <Card style={styles.sectionCard}>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-            Añade tantas fotos como quieras. Se subirán al guardar el registro.
-          </ThemedText>
-
-          {photos.length > 0 ? (
-            <View style={styles.photoGrid}>
-              {photos.map((photo) => (
-                <View key={photo.id} style={styles.photoItem}>
-                  <Image
-                    source={{ uri: photo.uri }}
-                    style={styles.photoImage}
-                    contentFit="cover"
-                  />
-                  <Pressable
-                    style={[styles.removePhotoBtn, { backgroundColor: theme.coral }]}
-                    onPress={() => removePhoto(photo.id)}
-                    hitSlop={8}>
-                    <Ionicons name="close" size={14} color="#FFFFFF" />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          <Button
-            title={photos.length > 0 ? 'Añadir más fotos' : 'Añadir fotos'}
-            icon="images-outline"
-            variant="secondary"
-            onPress={() => {
-              void pickPhotos();
-            }}
+          <ProgressPosePhotoPicker
+            value={posePhotos}
+            onChange={setPosePhotos}
             disabled={saving}
           />
         </Card>
@@ -485,32 +420,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-  },
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  photoItem: {
-    width: '30%',
-    aspectRatio: 3 / 4,
-    borderRadius: Radius.md,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  removePhotoBtn: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 22,
-    height: 22,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoImage: {
-    width: '100%',
-    height: '100%',
   },
   error: { marginBottom: Spacing.two },
 });

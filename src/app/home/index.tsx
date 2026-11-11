@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { DailyStepsCard } from '@/components/dashboard/daily-steps-card';
 import { PhaseProgress } from '@/components/dashboard/phase-progress';
 import { UpcomingReviewReminder } from '@/components/dashboard/upcoming-review-reminder';
+import { WelcomeOnboardingCard } from '@/components/onboarding/welcome-onboarding-card';
 import { LineChart } from '@/components/charts/line-chart';
 import { ProgressRing } from '@/components/charts/progress-ring';
 import { ThemedText } from '@/components/themed-text';
@@ -134,6 +135,8 @@ export default function DashboardScreen() {
       </View>
 
       <UpcomingReviewReminder />
+
+      <WelcomeOnboardingCard />
 
       <View style={styles.statsRow}>
         <StatTile

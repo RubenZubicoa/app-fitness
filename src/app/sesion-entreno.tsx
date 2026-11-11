@@ -549,7 +549,7 @@ function ExerciseCard({
                 accessibilityLabel={`Imagen de ${exercise.name}`}
               />
             ) : null}
-            <ThemedText type="h2">{exercise.name}</ThemedText>
+            <ThemedText type="subtitle">{exercise.name}</ThemedText>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               <ThemedText type="body" themeColor="textSecondary">
                 {exercise.explanation}

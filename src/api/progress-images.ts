@@ -3,7 +3,11 @@ import { Platform } from 'react-native';
 import { apiFetch, apiRequest, parseJson } from '@/api/http';
 import { createImageFormPart } from '@/api/prepare-image-upload';
 import { API_URL } from '@/constants/api';
-import { normalizeProgressImage, type ProgressImage } from '@/types/progress-image';
+import {
+  normalizeProgressImage,
+  type ProgressImage,
+  type ProgressImagePose,
+} from '@/types/progress-image';
 
 async function appendImageField(
   formData: FormData,
@@ -52,6 +56,7 @@ export async function uploadProgressImage(
   imageUri: string,
   filename = 'photo.jpg',
   mimeType?: string | null,
+  pose?: ProgressImagePose | null,
 ): Promise<ProgressImage> {
   console.log('[progress-images] POST /api/progress-images inicio', {
     apiUrl: API_URL,
@@ -59,10 +64,12 @@ export async function uploadProgressImage(
     imageUri,
     filename,
     mimeType,
+    pose,
   });
 
   const formData = new FormData();
   formData.append('clientId', clientId);
+  if (pose) formData.append('pose', pose);
   await appendImageField(formData, imageUri, filename, mimeType);
 
   console.log('[progress-images] Enviando FormData al back…');
@@ -111,8 +118,15 @@ export async function replaceProgressImage(
   imageUri: string,
   filename = 'photo.jpg',
   mimeType?: string | null,
+  pose?: ProgressImagePose | null,
 ): Promise<ProgressImage> {
-  const uploaded = await uploadProgressImage(clientId, imageUri, filename, mimeType);
+  const uploaded = await uploadProgressImage(
+    clientId,
+    imageUri,
+    filename,
+    mimeType,
+    pose,
+  );
   try {
     await deleteProgressImage(existingId);
   } catch {
