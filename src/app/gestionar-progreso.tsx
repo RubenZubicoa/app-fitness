@@ -531,9 +531,12 @@ export default function GestionarProgresoScreen() {
                 <Card key={img._id} style={styles.photoCard}>
                   <Image source={{ uri: img.image }} style={styles.photo} contentFit="cover" />
                   <View style={styles.photoMeta}>
-                    <ThemedText type="smallBold">
-                      {formatProgressImageDate(img.createdAt) || 'Sin fecha'}
-                    </ThemedText>
+                    <View style={styles.photoMetaText}>
+                      <ThemedText type="smallBold">{img.pose}</ThemedText>
+                      <ThemedText type="caption" themeColor="textMuted">
+                        {formatProgressImageDate(img.createdAt) || 'Sin fecha'}
+                      </ThemedText>
+                    </View>
                     <View style={styles.rowActions}>
                       <Pressable
                         style={({ pressed }) => [
@@ -625,6 +628,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
+  },
+  photoMetaText: {
+    flex: 1,
+    gap: 2,
   },
   pressed: { opacity: 0.75 },
 });

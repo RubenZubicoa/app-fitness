@@ -275,13 +275,13 @@ export default function ProgresoScreen() {
           </Card>
         ) : (
           <View style={styles.photoRow}>
-            {progressImages.slice(0, 3).map((img, index) => (
+            {progressImages.slice(0, 3).map((img, index, list) => (
               <PhotoCard
                 key={img._id}
-                label={index === 0 ? 'Inicio' : `Sem. ${index}`}
+                label={img.pose}
                 date={formatProgressImageDate(img.createdAt)}
                 image={img.image}
-                highlight={index === progressImages.slice(0, 3).length - 1}
+                highlight={index === list.length - 1}
               />
             ))}
           </View>
