@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ExerciseExplanationMedia } from '@/components/training/exercise-explanation-media';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -505,7 +506,7 @@ function ExerciseCard({
           <ThemedText type="small" themeColor="textSecondary">
             {isCardio ? 'Cardio' : `Objetivo ${exercise.sets}`} · Descanso {exercise.rest}
           </ThemedText>
-          {!!exercise.explanation && (
+          {!!(exercise.explanation || exercise.explanationUrl) && (
             <Pressable
               style={({ pressed }) => [styles.explainBtn, pressed && styles.pressed]}
               onPress={() => setShowExplanation(true)}
@@ -542,6 +543,14 @@ function ExerciseCard({
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowExplanation(false)} />
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <ThemedText type="subtitle">{exercise.name}</ThemedText>
+            {!!exercise.explanation && (
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <ThemedText type="body" themeColor="textSecondary">
+                  {exercise.explanation}
+                </ThemedText>
+              </ScrollView>
+            )}
             {exercise.imageUrl ? (
               <Image
                 source={{ uri: exercise.imageUrl }}
@@ -549,12 +558,12 @@ function ExerciseCard({
                 accessibilityLabel={`Imagen de ${exercise.name}`}
               />
             ) : null}
-            <ThemedText type="subtitle">{exercise.name}</ThemedText>
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <ThemedText type="body" themeColor="textSecondary">
-                {exercise.explanation}
-              </ThemedText>
-            </ScrollView>
+            {exercise.explanationUrl ? (
+              <ExerciseExplanationMedia
+                url={exercise.explanationUrl}
+                active={showExplanation}
+              />
+            ) : null}
             <Button
               title="Cerrar"
               variant="ghost"

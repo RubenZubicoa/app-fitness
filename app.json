@@ -71,6 +71,7 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
+      "expo-video",
       [
         "expo-widgets",
         {
@@ -100,9 +101,18 @@
                       "type": "enum",
                       "default": "overview",
                       "values": [
-                        { "name": "Resumen", "value": "overview" },
-                        { "name": "Pasos", "value": "steps" },
-                        { "name": "Plan", "value": "plan" }
+                        {
+                          "name": "Resumen",
+                          "value": "overview"
+                        },
+                        {
+                          "name": "Pasos",
+                          "value": "steps"
+                        },
+                        {
+                          "name": "Plan",
+                          "value": "plan"
+                        }
                       ]
                     }
                   }
@@ -111,7 +121,8 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
