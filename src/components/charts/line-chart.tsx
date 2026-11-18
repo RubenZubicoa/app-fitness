@@ -77,25 +77,29 @@ export function LineChart({
   const chartW = Math.max(width - padX * 2, 1);
   const chartH = height - padTop - padBottom;
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  const points = data.map((v, i) => ({
-    x: padX + (data.length === 1 ? chartW / 2 : (chartW * i) / (data.length - 1)),
-    y: padTop + chartH - ((v - min) / range) * chartH,
-  }));
-
-  const linePath = buildSmoothPath(points);
-  const areaPath =
-    points.length > 0
-      ? `${linePath} L ${points[points.length - 1].x} ${padTop + chartH} L ${points[0].x} ${
-          padTop + chartH
-        } Z`
-      : '';
-
-  const gid = `line-${stroke}`.replace(/[^a-zA-Z0-9]/g, '');
-  const fillId = `fill-${fill}`.replace(/[^a-zA-Z0-9]/g, '');
+  const { points, linePath, areaPath, gid, fillId } = useMemo(() => {
+    const min = data.length ? Math.min(...data) : 0;
+    const max = data.length ? Math.max(...data) : 1;
+    const range = max - min || 1;
+    const nextPoints = data.map((v, i) => ({
+      x: padX + (data.length === 1 ? chartW / 2 : (chartW * i) / (data.length - 1)),
+      y: padTop + chartH - ((v - min) / range) * chartH,
+    }));
+    const nextLine = buildSmoothPath(nextPoints);
+    const nextArea =
+      nextPoints.length > 0
+        ? `${nextLine} L ${nextPoints[nextPoints.length - 1].x} ${padTop + chartH} L ${nextPoints[0].x} ${
+            padTop + chartH
+          } Z`
+        : '';
+    return {
+      points: nextPoints,
+      linePath: nextLine,
+      areaPath: nextArea,
+      gid: `line-${stroke}`.replace(/[^a-zA-Z0-9]/g, ''),
+      fillId: `fill-${fill}`.replace(/[^a-zA-Z0-9]/g, ''),
+    };
+  }, [data, chartW, chartH, padX, padTop, stroke, fill]);
 
   const tooltip = useMemo(() => {
     if (activeIndex === null || !points[activeIndex]) return null;

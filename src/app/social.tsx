@@ -88,6 +88,8 @@ function WorkoutMediaRow({ media }: { media: WorkoutMedia[] }) {
             source={{ uri: item.uri }}
             style={styles.photo}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={item.uri}
           />
         ) : (
           <View

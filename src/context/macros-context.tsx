@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,9 +46,7 @@ export function MacrosProvider({ children }: { children: ReactNode }) {
     }
   }, [client?._id]);
 
-  useEffect(() => {
-    void refreshMacros();
-  }, [refreshMacros]);
+  // Carga bajo demanda al abrir Nutrición.
 
   const value = useMemo<MacrosContextValue>(
     () => ({

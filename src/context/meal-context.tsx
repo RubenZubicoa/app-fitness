@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,9 +46,7 @@ export function MealProvider({ children }: { children: ReactNode }) {
     }
   }, [client?._id]);
 
-  useEffect(() => {
-    void refreshMeals();
-  }, [refreshMeals]);
+  // Carga bajo demanda (p. ej. al enfocar Nutrición), no en el arranque global.
 
   const value = useMemo<MealContextValue>(
     () => ({ meal, loading, error, refreshMeals }),

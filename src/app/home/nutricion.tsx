@@ -18,13 +18,14 @@ import { useMeals } from '@/context/meal-context';
 import { useShoppingList } from '@/context/shopping-list-context';
 import { useSupplements } from '@/context/supplements-context';
 import { getCurrentPhase } from '@/data/program';
+import { useLoadOnFocus } from '@/hooks/use-load-on-focus';
 import { useTheme } from '@/hooks/use-theme';
 import type { SupplementElement } from '@/types/supplements';
 
 export default function NutricionScreen() {
   const theme = useTheme();
   const { client } = useClient();
-  const { macros, loading: macrosLoading, error: macrosError } = useMacros();
+  const { macros, loading: macrosLoading, error: macrosError, refreshMacros } = useMacros();
   const {
     shoppingList,
     loading: shoppingLoading,
@@ -35,17 +36,29 @@ export default function NutricionScreen() {
     removeItem,
     createEmptyList,
     deleteList,
+    refreshShoppingList,
   } = useShoppingList();
   const {
     supplements,
     loading: supplementsLoading,
     error: supplementsError,
+    refreshSupplements,
   } = useSupplements();
   const {
     meal,
     loading: mealsLoading,
     error: mealsError,
+    refreshMeals,
   } = useMeals();
+
+  useLoadOnFocus(
+    useCallback(() => {
+      void refreshMacros();
+      void refreshMeals();
+      void refreshShoppingList();
+      void refreshSupplements();
+    }, [refreshMacros, refreshMeals, refreshShoppingList, refreshSupplements]),
+  );
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
   const toggleSlot = useCallback(
     (label: string) => setExpandedSlot((prev) => (prev === label ? null : label)),

@@ -80,7 +80,25 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
   const [shareStepsInCommunity, setShareStepsInCommunityState] = useState(false);
   const [accessKey, setAccessKey] = useState(0);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveStepsThrottle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingLiveSteps = useRef<number | null>(null);
+  const lastEmittedLiveSteps = useRef<number | null>(null);
   const sharePrefRef = useRef(false);
+
+  /** Limita re-renders por cada paso del sensor (dispositivos antiguos). */
+  const emitLiveSteps = useCallback((steps: number) => {
+    pendingLiveSteps.current = steps;
+    if (liveStepsThrottle.current) return;
+
+    liveStepsThrottle.current = setTimeout(() => {
+      liveStepsThrottle.current = null;
+      const next = pendingLiveSteps.current;
+      if (next == null) return;
+      if (lastEmittedLiveSteps.current === next) return;
+      lastEmittedLiveSteps.current = next;
+      setLiveSteps(next);
+    }, 3000);
+  }, []);
 
   const refreshDailySteps = useCallback(async (options?: { silent?: boolean }) => {
     if (!client?._id) {
@@ -242,7 +260,10 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
       const result = await syncPedometerToApi();
       if (cancelled) return;
       setPedometerStatus(result.status);
-      if (result.todaySteps != null) setLiveSteps(result.todaySteps);
+      if (result.todaySteps != null) {
+        lastEmittedLiveSteps.current = result.todaySteps;
+        setLiveSteps(result.todaySteps);
+      }
       await refreshDailySteps({ silent: true });
     };
 
@@ -286,6 +307,7 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
 
       const seeded = await beginAndroidSession(apiToday);
       if (cancelled) return;
+      lastEmittedLiveSteps.current = seeded;
       setLiveSteps(seeded);
 
       // Android: servicio nativo que sigue contando con la app cerrada.
@@ -297,7 +319,7 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
 
       subscription = subscribeStepUpdates((steps) => {
         if (cancelled) return;
-        setLiveSteps(steps);
+        emitLiveSteps(steps);
         queueSync();
       });
     };
@@ -312,8 +334,12 @@ export function DailyStepsProvider({ children }: { children: ReactNode }) {
         clearTimeout(syncTimer.current);
         syncTimer.current = null;
       }
+      if (liveStepsThrottle.current) {
+        clearTimeout(liveStepsThrottle.current);
+        liveStepsThrottle.current = null;
+      }
     };
-  }, [accessKey, client?._id, refreshDailySteps]);
+  }, [accessKey, client?._id, emitLiveSteps, refreshDailySteps]);
 
   const value = useMemo<DailyStepsContextValue>(
     () => ({

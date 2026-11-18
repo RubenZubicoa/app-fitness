@@ -11,30 +11,49 @@ type ScreenProps = {
   header?: ReactNode;
   /** Deja espacio inferior para la barra de pestañas. */
   withTabBar?: boolean;
+  /**
+   * Si false, no usa ScrollView (para pantallas con FlatList propia).
+   * Default true.
+   */
+  scroll?: boolean;
   contentStyle?: object;
 };
 
 /** Envoltorio de pantalla: fondo temático, scroll y ancho máximo centrado. */
-export function Screen({ children, header, withTabBar = true, contentStyle }: ScreenProps) {
+export function Screen({
+  children,
+  header,
+  withTabBar = true,
+  scroll = true,
+  contentStyle,
+}: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const bottomPad = (withTabBar ? BottomTabInset : insets.bottom) + Spacing.four;
+
+  const body = (
+    <>
+      {header}
+      <View style={styles.centerer}>
+        <View style={[styles.content, contentStyle]}>{children}</View>
+      </View>
+    </>
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom: (withTabBar ? BottomTabInset : insets.bottom) + Spacing.four,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        {header}
-        <View style={styles.centerer}>
-          <View style={[styles.content, contentStyle]}>{children}</View>
+      {scroll ? (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
+          showsVerticalScrollIndicator={false}>
+          {body}
+        </ScrollView>
+      ) : (
+        <View style={[styles.scroll, styles.scrollContent, { paddingBottom: bottomPad }]}>
+          {body}
         </View>
-      </ScrollView>
+      )}
     </View>
   );
 }

@@ -43,6 +43,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withOptionalPortraitFeature.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -121,8 +122,7 @@
             }
           ]
         }
-      ],
-      "expo-video"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

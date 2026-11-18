@@ -14,6 +14,7 @@ import { Brand, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useVideoLibrary } from '@/context/video-library-context';
 import { getCurrentPhase } from '@/data/program';
+import { useLoadOnFocus } from '@/hooks/use-load-on-focus';
 import type { VideoLibraryItem } from '@/types/video-library';
 
 const toneMap = {
@@ -24,7 +25,13 @@ const toneMap = {
 
 export default function VideotecaTabScreen() {
   const { client } = useClient();
-  const { videoLibrary, loading, error } = useVideoLibrary();
+  const { videoLibrary, loading, error, refreshVideoLibrary } = useVideoLibrary();
+
+  useLoadOnFocus(
+    useCallback(() => {
+      void refreshVideoLibrary();
+    }, [refreshVideoLibrary]),
+  );
 
   const openResource = useCallback(async (url: string) => {
     if (!url) return;

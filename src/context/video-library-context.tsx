@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,9 +46,7 @@ export function VideoLibraryProvider({ children }: { children: ReactNode }) {
     }
   }, [client?.phase]);
 
-  useEffect(() => {
-    void refreshVideoLibrary();
-  }, [refreshVideoLibrary]);
+  // Carga bajo demanda al abrir Videoteca.
 
   const value = useMemo<VideoLibraryContextValue>(
     () => ({

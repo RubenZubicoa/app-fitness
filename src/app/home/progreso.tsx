@@ -328,7 +328,13 @@ function PhotoCard({
   const theme = useTheme();
   return (
     <View style={styles.photoWrap}>
-      <Image source={{ uri: image }} style={styles.photo} contentFit="cover" />
+      <Image
+        source={{ uri: image }}
+        style={styles.photo}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        recyclingKey={image}
+      />
       <View style={styles.photoOverlay}>
         {highlight && <Badge label="Actual" tone="gold" solid />}
         <ThemedText type="smallBold" style={styles.photoLabel}>

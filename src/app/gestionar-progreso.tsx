@@ -529,7 +529,13 @@ export default function GestionarProgresoScreen() {
             <View style={styles.photoList}>
               {sortedImages.map((img) => (
                 <Card key={img._id} style={styles.photoCard}>
-                  <Image source={{ uri: img.image }} style={styles.photo} contentFit="cover" />
+                  <Image
+                    source={{ uri: img.image }}
+                    style={styles.photo}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    recyclingKey={img._id}
+                  />
                   <View style={styles.photoMeta}>
                     <View style={styles.photoMetaText}>
                       <ThemedText type="smallBold">{img.pose}</ThemedText>

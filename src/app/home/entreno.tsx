@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { WorkoutHistoryCard } from '@/components/training/workout-history-card';
@@ -34,34 +35,41 @@ export default function EntrenoScreen() {
     loading: historyLoading,
     error: historyError,
   } = useWorkoutHistory();
-  if (!client) return null;
+  const stats = useMemo(() => {
+    if (!client) return null;
+    const plannedPerWeek = routine.length;
+    const planRange = {
+      startDate: client.startDate,
+      endDate: client.endDate,
+    };
+    const completed = countWorkoutsInWeek(workoutHistory, client.week, planRange);
+    const adherence =
+      plannedPerWeek > 0
+        ? Math.max(0, Math.min(100, Math.round((completed / plannedPerWeek) * 100)))
+        : 0;
+    return {
+      plannedPerWeek,
+      completed,
+      adherence,
+      adherenceWeeks: computeAdherenceWeeks(workoutHistory, plannedPerWeek, client.week, {
+        ...planRange,
+        totalWeeks: client.totalWeeks,
+      }),
+      workoutWeek: computeWorkoutWeek(workoutHistory, client.week, planRange),
+      phase: getCurrentPhase(client.phase),
+    };
+  }, [client, routine.length, workoutHistory]);
 
-  const plannedPerWeek = routine.length;
-  const planRange = {
-    startDate: client.startDate,
-    endDate: client.endDate,
-  };
-  const completed = countWorkoutsInWeek(
-    workoutHistory,
-    client.week,
-    planRange,
-  );
-  const adherence =
-    plannedPerWeek > 0
-      ? Math.max(0, Math.min(100, Math.round((completed / plannedPerWeek) * 100)))
-      : 0;
-  const adherenceWeeks = computeAdherenceWeeks(
-    workoutHistory,
+  if (!client || !stats) return null;
+
+  const {
     plannedPerWeek,
-    client.week,
-    { ...planRange, totalWeeks: client.totalWeeks },
-  );
-  const workoutWeek = computeWorkoutWeek(
-    workoutHistory,
-    client.week,
-    planRange,
-  );
-  const phase = getCurrentPhase(client.phase);
+    completed,
+    adherence,
+    adherenceWeeks,
+    workoutWeek,
+    phase,
+  } = stats;
 
   return (
     <Screen

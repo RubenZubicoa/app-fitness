@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,9 +46,7 @@ export function SupplementsProvider({ children }: { children: ReactNode }) {
     }
   }, [client?._id]);
 
-  useEffect(() => {
-    void refreshSupplements();
-  }, [refreshSupplements]);
+  // Carga bajo demanda al abrir Nutrición.
 
   const value = useMemo<SupplementsContextValue>(
     () => ({

@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -59,9 +58,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     }
   }, [client?._id]);
 
-  useEffect(() => {
-    void refreshShoppingList();
-  }, [refreshShoppingList]);
+  // Carga bajo demanda al abrir Nutrición.
 
   const toggleItemDone = useCallback(
     async (itemName: string) => {

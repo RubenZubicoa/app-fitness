@@ -1,10 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import {
   Alert,
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -55,6 +63,72 @@ function formatTime(total: number) {
   const s = (total % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
+
+type RestTimerHandle = {
+  stop: () => void;
+};
+
+/** Cronómetro aislado: no re-renderiza la lista de ejercicios cada segundo. */
+const RestTimerCard = memo(function RestTimerCard({
+  totalSeries,
+  timerRef,
+}: {
+  totalSeries: number;
+  timerRef?: Ref<RestTimerHandle>;
+}) {
+  const [running, setRunning] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useImperativeHandle(timerRef, () => ({
+    stop: () => {
+      setRunning(false);
+      setSeconds(0);
+    },
+  }));
+
+  useEffect(() => {
+    if (running) {
+      intervalRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [running]);
+
+  return (
+    <View style={styles.timerCard}>
+      <View style={styles.timerLeft}>
+        <ThemedText type="label" style={styles.timerLabel}>
+          {running
+            ? 'Descanso en curso'
+            : seconds > 0
+              ? 'Descanso en pausa'
+              : 'Temporizador de descanso'}
+        </ThemedText>
+        <ThemedText type="display" style={styles.timerValue}>
+          {formatTime(seconds)}
+        </ThemedText>
+        <ThemedText type="caption" style={styles.timerSub}>
+          Solo informativo · {totalSeries} series
+        </ThemedText>
+      </View>
+      <View style={styles.timerControls}>
+        <Pressable style={styles.controlBtn} onPress={() => setRunning((r) => !r)}>
+          <Ionicons name={running ? 'pause' : 'play'} size={22} color="#FFFFFF" />
+        </Pressable>
+        <Pressable
+          style={styles.controlBtn}
+          onPress={() => {
+            setRunning(false);
+            setSeconds(0);
+          }}>
+          <Ionicons name="refresh" size={22} color="#FFFFFF" />
+        </Pressable>
+      </View>
+    </View>
+  );
+});
 
 function formatSessionDate(date = new Date()): string {
   const year = date.getFullYear();
@@ -143,13 +217,12 @@ export default function SesionEntrenoScreen() {
   const { createWorkout, saving } = useWorkoutHistory();
   const session = routine[dayIndex] ?? routine[0];
 
-  const [running, setRunning] = useState(false);
-  const [seconds, setSeconds] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, ExerciseDraft>>({});
   const [media, setMedia] = useState<WorkoutMedia[]>([]);
   const [shareInCommunity, setShareInCommunity] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [explanationExercise, setExplanationExercise] = useState<Exercise | null>(null);
+  const restTimerRef = useRef<RestTimerHandle>(null);
   const sessionId = session?._id ?? '';
 
   const hasStrengthExercises = useMemo(
@@ -161,23 +234,9 @@ export default function SesionEntrenoScreen() {
     if (!session) return;
     setDrafts(buildInitialDrafts(session.exercises));
     setSaveError(null);
-    setRunning(false);
-    setSeconds(0);
+    setExplanationExercise(null);
+    restTimerRef.current?.stop();
   }, [sessionId]);
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running]);
-
-  const resetRestTimer = () => {
-    setRunning(false);
-    setSeconds(0);
-  };
 
   const totalSeries = useMemo(
     () =>
@@ -267,7 +326,7 @@ export default function SesionEntrenoScreen() {
   const handleSave = async () => {
     if (!client || !session || saving) return;
 
-    setRunning(false);
+    restTimerRef.current?.stop();
     setSaveError(null);
 
     const exercises = draftsToExerciseLogs(session.exercises, drafts);
@@ -329,29 +388,7 @@ export default function SesionEntrenoScreen() {
           showBack
           gradient={Brand.gradientNavy}>
           {hasStrengthExercises ? (
-            <View style={styles.timerCard}>
-              <View style={styles.timerLeft}>
-                <ThemedText type="label" style={styles.timerLabel}>
-                  {running ? 'Descanso en curso' : seconds > 0 ? 'Descanso en pausa' : 'Temporizador de descanso'}
-                </ThemedText>
-                <ThemedText type="display" style={styles.timerValue}>
-                  {formatTime(seconds)}
-                </ThemedText>
-                <ThemedText type="caption" style={styles.timerSub}>
-                  Solo informativo · {totalSeries} series
-                </ThemedText>
-              </View>
-              <View style={styles.timerControls}>
-                <Pressable
-                  style={styles.controlBtn}
-                  onPress={() => setRunning((r) => !r)}>
-                  <Ionicons name={running ? 'pause' : 'play'} size={22} color="#FFFFFF" />
-                </Pressable>
-                <Pressable style={styles.controlBtn} onPress={resetRestTimer}>
-                  <Ionicons name="refresh" size={22} color="#FFFFFF" />
-                </Pressable>
-              </View>
-            </View>
+            <RestTimerCard totalSeries={totalSeries} timerRef={restTimerRef} />
           ) : null}
         </GradientHeader>
       }>
@@ -366,6 +403,7 @@ export default function SesionEntrenoScreen() {
               updateStrengthSet(ex.name, setIndex, field, value)
             }
             onChangeCardio={(field, value) => updateCardio(ex.name, field, value)}
+            onOpenExplanation={() => setExplanationExercise(ex)}
           />
         ))}
       </View>
@@ -461,6 +499,55 @@ export default function SesionEntrenoScreen() {
         onPress={() => router.back()}
         disabled={saving}
       />
+
+      <Modal
+        visible={explanationExercise != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExplanationExercise(null)}>
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setExplanationExercise(null)}
+          />
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            {explanationExercise ? (
+              <>
+                <ThemedText type="subtitle">{explanationExercise.name}</ThemedText>
+                {!!explanationExercise.explanation && (
+                  <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                    <ThemedText type="body" themeColor="textSecondary">
+                      {explanationExercise.explanation}
+                    </ThemedText>
+                  </ScrollView>
+                )}
+                {explanationExercise.imageUrl ? (
+                  <Image
+                    source={{ uri: explanationExercise.imageUrl }}
+                    style={styles.modalImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    recyclingKey={explanationExercise.imageUrl}
+                    accessibilityLabel={`Imagen de ${explanationExercise.name}`}
+                  />
+                ) : null}
+                {explanationExercise.explanationUrl ? (
+                  <ExerciseExplanationMedia
+                    url={explanationExercise.explanationUrl}
+                    active
+                  />
+                ) : null}
+              </>
+            ) : null}
+            <Button
+              title="Cerrar"
+              variant="ghost"
+              icon="close"
+              onPress={() => setExplanationExercise(null)}
+            />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -471,16 +558,17 @@ function ExerciseCard({
   draft,
   onChangeStrength,
   onChangeCardio,
+  onOpenExplanation,
 }: {
   exercise: Exercise;
   index: number;
   draft?: ExerciseDraft;
   onChangeStrength: (setIndex: number, field: keyof StrengthSetDraft, value: string) => void;
   onChangeCardio: (field: keyof CardioDraft, value: string) => void;
+  onOpenExplanation: () => void;
 }) {
   const theme = useTheme();
   const isCardio = exercise.type === 'cardio';
-  const [showExplanation, setShowExplanation] = useState(false);
 
   return (
     <Card style={styles.exerciseCard}>
@@ -489,6 +577,9 @@ function ExerciseCard({
           <Image
             source={{ uri: exercise.imageUrl }}
             style={styles.exerciseThumb}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={exercise.imageUrl}
             accessibilityLabel={`Imagen de ${exercise.name}`}
           />
         ) : (
@@ -509,7 +600,7 @@ function ExerciseCard({
           {!!(exercise.explanation || exercise.explanationUrl) && (
             <Pressable
               style={({ pressed }) => [styles.explainBtn, pressed && styles.pressed]}
-              onPress={() => setShowExplanation(true)}
+              onPress={onOpenExplanation}
               hitSlop={6}>
               <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
               <ThemedText type="smallBold" themeColor="primary">
@@ -534,45 +625,6 @@ function ExerciseCard({
           onChange={onChangeStrength}
         />
       )}
-
-      <Modal
-        visible={showExplanation}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowExplanation(false)}>
-        <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowExplanation(false)} />
-          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
-            <ThemedText type="subtitle">{exercise.name}</ThemedText>
-            {!!exercise.explanation && (
-              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-                <ThemedText type="body" themeColor="textSecondary">
-                  {exercise.explanation}
-                </ThemedText>
-              </ScrollView>
-            )}
-            {exercise.imageUrl ? (
-              <Image
-                source={{ uri: exercise.imageUrl }}
-                style={styles.modalImage}
-                accessibilityLabel={`Imagen de ${exercise.name}`}
-              />
-            ) : null}
-            {exercise.explanationUrl ? (
-              <ExerciseExplanationMedia
-                url={exercise.explanationUrl}
-                active={showExplanation}
-              />
-            ) : null}
-            <Button
-              title="Cerrar"
-              variant="ghost"
-              icon="close"
-              onPress={() => setShowExplanation(false)}
-            />
-          </View>
-        </View>
-      </Modal>
     </Card>
   );
 }

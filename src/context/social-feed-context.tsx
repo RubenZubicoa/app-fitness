@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -22,14 +21,14 @@ const SocialFeedContext = createContext<SocialFeedContextValue | undefined>(unde
 
 export function SocialFeedProvider({ children }: { children: ReactNode }) {
   const [feed, setFeed] = useState<SocialFeedEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshFeed = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const entries = await fetchSocialFeed({ limit: 100 });
+      const entries = await fetchSocialFeed({ limit: 40 });
       setFeed(entries);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la comunidad');
@@ -38,10 +37,6 @@ export function SocialFeedProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    void refreshFeed();
-  }, [refreshFeed]);
 
   const value = useMemo(
     () => ({ feed, loading, error, refreshFeed }),
