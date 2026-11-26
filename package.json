@@ -1,7 +1,7 @@
 {
   "name": "fitness",
   "main": "expo-router/entry",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.3",
     "@expo/ui": "~57.0.26",
