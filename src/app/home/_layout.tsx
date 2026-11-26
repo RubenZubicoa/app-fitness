@@ -24,7 +24,7 @@ export default function HomeTabsLayout() {
               <TabButton icon="barbell-outline" activeIcon="barbell" label="Entreno" />
             </TabTrigger>
             <TabTrigger name="videoteca" href="/home/videoteca" asChild>
-              <TabButton icon="play-circle-outline" activeIcon="play-circle" label="Videos" />
+              <TabButton icon="play-circle-outline" activeIcon="play-circle" label="Videoteca" />
             </TabTrigger>
             <TabTrigger name="mas" href="/home/mas" asChild>
               <TabButton icon="grid-outline" activeIcon="grid" label="Más" />

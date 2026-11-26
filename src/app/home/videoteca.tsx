@@ -1,21 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { GradientHeader } from '@/components/ui/gradient-header';
 import { IconBadge } from '@/components/ui/icon-badge';
 import { Screen } from '@/components/ui/screen';
-import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useVideoLibrary } from '@/context/video-library-context';
 import { getCurrentPhase } from '@/data/program';
 import { useLoadOnFocus } from '@/hooks/use-load-on-focus';
-import type { VideoLibraryItem } from '@/types/video-library';
+import { useTheme } from '@/hooks/use-theme';
 
 const toneMap = {
   gold: { color: Brand.gold, bg: '#FBF0D8' },
@@ -23,7 +21,14 @@ const toneMap = {
   purple: { color: Brand.purple, bg: '#EDE7FE' },
 };
 
+function itemCountLabel(count: number): string {
+  if (count === 1) return '1 recurso';
+  return `${count} recursos`;
+}
+
 export default function VideotecaTabScreen() {
+  const router = useRouter();
+  const theme = useTheme();
   const { client } = useClient();
   const { videoLibrary, loading, error, refreshVideoLibrary } = useVideoLibrary();
 
@@ -33,63 +38,9 @@ export default function VideotecaTabScreen() {
     }, [refreshVideoLibrary]),
   );
 
-  const openResource = useCallback(async (url: string) => {
-    if (!url) return;
-
-    try {
-      if (Platform.OS === 'web') {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        return;
-      }
-      await openBrowserAsync(url, {
-        presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
-      });
-    } catch {
-      Alert.alert('Error', 'No se pudo abrir el recurso.');
-    }
-  }, []);
-
   if (!client) return null;
 
   const phase = getCurrentPhase(client.phase);
-
-  const renderItem = (
-    item: VideoLibraryItem,
-    icon: keyof typeof Ionicons.glyphMap,
-    color: string,
-    bg: string,
-    badgeTone: 'gold' | 'primary',
-  ) => {
-    const card = (
-      <Card style={styles.item}>
-        <IconBadge name={icon} color={color} background={bg} size={44} />
-        <View style={styles.itemBody}>
-          <ThemedText type="h3">{item.title}</ThemedText>
-          <View style={styles.meta}>
-            <Badge label={item.type} tone={badgeTone} />
-            <ThemedText type="caption" themeColor="textMuted">
-              {item.length}
-            </ThemedText>
-          </View>
-        </View>
-        <Ionicons
-          name={item.type === 'Vídeo' ? 'play-circle' : 'document-text'}
-          size={28}
-          color={color}
-        />
-      </Card>
-    );
-
-    if (!item.url) return card;
-
-    return (
-      <Pressable
-        style={({ pressed }) => pressed && styles.pressed}
-        onPress={() => void openResource(item.url)}>
-        {card}
-      </Pressable>
-    );
-  };
 
   return (
     <Screen
@@ -97,7 +48,7 @@ export default function VideotecaTabScreen() {
         <GradientHeader
           eyebrow={`Fase ${phase.id} · ${phase.name}`}
           title="Videoteca"
-          subtitle="Vídeos y PDFs sobre nutrición, entreno y hábitos de tu fase actual"
+          subtitle="Elige una carpeta para ver vídeos y PDFs de tu fase actual"
           gradient={Brand.gradientNavy}
         />
       }>
@@ -124,22 +75,28 @@ export default function VideotecaTabScreen() {
           videoLibrary.map((cat) => {
             const colors = toneMap[cat.tone];
             return (
-              <View key={cat._id}>
-                <SectionHeader title={cat.category} />
-                <View style={styles.items}>
-                  {cat.items.map((item) => (
-                    <View key={item._id}>
-                      {renderItem(
-                        item,
-                        cat.icon,
-                        colors.color,
-                        colors.bg,
-                        cat.tone === 'gold' ? 'gold' : 'primary',
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
+              <Pressable
+                key={cat._id}
+                style={({ pressed }) => pressed && styles.pressed}
+                onPress={() =>
+                  router.push({
+                    pathname: '/videoteca-categoria',
+                    params: { id: cat._id },
+                  } as Href)
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir carpeta ${cat.category}`}>
+                <Card style={styles.folder}>
+                  <IconBadge name={cat.icon} color={colors.color} background={colors.bg} size={48} />
+                  <View style={styles.folderBody}>
+                    <ThemedText type="h3">{cat.category}</ThemedText>
+                    <ThemedText type="caption" themeColor="textMuted">
+                      {itemCountLabel(cat.items.length)}
+                    </ThemedText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+                </Card>
+              </Pressable>
             );
           })
         )}
@@ -152,20 +109,14 @@ const styles = StyleSheet.create({
   content: {
     gap: Spacing.two,
   },
-  items: { gap: Spacing.two },
-  item: {
+  folder: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
   },
-  itemBody: {
+  folderBody: {
     flex: 1,
-    gap: 6,
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
+    gap: 4,
   },
   pressed: { opacity: 0.75 },
 });

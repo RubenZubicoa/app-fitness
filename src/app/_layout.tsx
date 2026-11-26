@@ -70,6 +70,7 @@ function RootNavigator() {
         <Stack.Screen name="historico-pasos" />
         <Stack.Screen name="revisiones" />
         <Stack.Screen name="videoteca" />
+        <Stack.Screen name="videoteca-categoria" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="social" />
         <Stack.Screen name="resultados" />
       </Stack>
