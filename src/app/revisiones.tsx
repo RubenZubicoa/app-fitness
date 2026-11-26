@@ -14,6 +14,7 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useTheme } from '@/hooks/use-theme';
+import { syncReviewReminderNotifications } from '@/services/review-reminders';
 import type { Review } from '@/types/review';
 
 export default function RevisionesScreen() {
@@ -32,7 +33,10 @@ export default function RevisionesScreen() {
     setError(null);
 
     fetchReviewsByClient(client._id)
-      .then(setReviews)
+      .then((list) => {
+        setReviews(list);
+        void syncReviewReminderNotifications(list);
+      })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Error al cargar revisiones');
       })

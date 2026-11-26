@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useClient } from '@/context/client-context';
 import { useTheme } from '@/hooks/use-theme';
+import { syncReviewReminderNotifications } from '@/services/review-reminders';
 import {
   findUpcomingReviewWithinHours,
   formatReviewDateLabel,
@@ -35,6 +36,7 @@ export function UpcomingReviewReminder() {
         const list = await fetchReviewsByClient(client._id);
         if (cancelled) return;
         setReview(findUpcomingReviewWithinHours(list, 24));
+        void syncReviewReminderNotifications(list);
       } catch {
         if (!cancelled) setReview(null);
       }

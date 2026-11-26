@@ -28,6 +28,7 @@ import {
 import type { Client } from '@/types/client';
 import { Brand } from '@/constants/theme';
 import { stopBackgroundStepTracking } from '@/services/pedometer';
+import { cancelReviewReminderNotifications } from '@/services/review-reminders';
 import { unregisterDailyStepsBackgroundTask } from '@/services/sync-daily-steps';
 import { syncHomeWidgets } from '@/services/sync-home-widgets';
 
@@ -58,6 +59,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     void clearSessionStore();
     void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
+    void cancelReviewReminderNotifications();
     setClient(null);
     syncHomeWidgets({ client: null, records: [] });
   }, []);
@@ -68,6 +70,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     void clearAuthSessionStore();
     void stopBackgroundStepTracking();
     void unregisterDailyStepsBackgroundTask();
+    void cancelReviewReminderNotifications();
     setClient(null);
     syncHomeWidgets({ client: null, records: [] });
   }, []);
@@ -104,6 +107,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         if (!withinTtl) {
           clearAuthToken();
           await clearAuthSessionStore();
+          await cancelReviewReminderNotifications();
           return;
         }
 

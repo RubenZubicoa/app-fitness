@@ -12,6 +12,7 @@ const SESSION_EXPIRES_KEY = 'regenesis.sessionExpiresAt';
 const ANDROID_STEPS_KEY = 'regenesis.androidSteps';
 const SHARE_STEPS_KEY_PREFIX = 'regenesis.shareStepsInCommunity.';
 const THEME_PREFERENCE_KEY = 'regenesis.themePreference';
+const REVIEW_REMINDERS_KEY = 'regenesis.reviewReminders';
 
 /** Caducidad local de la sesión tras el login. */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -231,6 +232,7 @@ export async function clearAuthSessionStore(): Promise<void> {
   await persistClientId(null);
   await persistSessionExpiresAt(null);
   await persistClientSnapshot(null);
+  await persistReviewRemindersState(null);
 }
 
 export async function clearSessionStore(): Promise<void> {
@@ -270,4 +272,41 @@ export async function persistThemePreference(
   preference: StoredThemePreference,
 ): Promise<void> {
   await write(THEME_PREFERENCE_KEY, preference);
+}
+
+export type ReviewRemindersState = {
+  notifiedIds: string[];
+  pending: Record<string, number>;
+};
+
+/** Estado de recordatorios locales de revisión (anti-duplicados). */
+export async function loadReviewRemindersState(): Promise<ReviewRemindersState> {
+  const raw = await read(REVIEW_REMINDERS_KEY);
+  if (!raw) return { notifiedIds: [], pending: {} };
+  try {
+    const parsed = JSON.parse(raw) as Partial<ReviewRemindersState>;
+    const notifiedIds = Array.isArray(parsed.notifiedIds)
+      ? parsed.notifiedIds.map(String).filter(Boolean)
+      : [];
+    const pending: Record<string, number> = {};
+    if (parsed.pending && typeof parsed.pending === 'object') {
+      for (const [key, value] of Object.entries(parsed.pending)) {
+        const ts = Number(value);
+        if (key && Number.isFinite(ts)) pending[key] = ts;
+      }
+    }
+    return { notifiedIds, pending };
+  } catch {
+    return { notifiedIds: [], pending: {} };
+  }
+}
+
+export async function persistReviewRemindersState(
+  state: ReviewRemindersState | null,
+): Promise<void> {
+  if (!state) {
+    await write(REVIEW_REMINDERS_KEY, null);
+    return;
+  }
+  await write(REVIEW_REMINDERS_KEY, JSON.stringify(state));
 }

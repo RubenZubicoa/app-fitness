@@ -24,6 +24,7 @@ import { WellnessProvider } from '@/context/wellness-context';
 import { WorkoutHistoryProvider } from '@/context/workout-history-context';
 import { ThemePreferenceProvider, useThemePreference } from '@/hooks/theme-preference';
 import { useSyncHomeWidgets } from '@/hooks/use-sync-home-widgets';
+import { initReviewReminderNotifications } from '@/services/review-reminders';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +37,8 @@ function RootNavigator() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  useEffect(() => initReviewReminderNotifications(), []);
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
