@@ -72,7 +72,6 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-video",
       [
         "expo-widgets",
         {

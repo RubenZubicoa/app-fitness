@@ -532,10 +532,7 @@ export default function SesionEntrenoScreen() {
                   />
                 ) : null}
                 {explanationExercise.explanationUrl ? (
-                  <ExerciseExplanationMedia
-                    url={explanationExercise.explanationUrl}
-                    active
-                  />
+                  <ExerciseExplanationMedia url={explanationExercise.explanationUrl} />
                 ) : null}
               </>
             ) : null}

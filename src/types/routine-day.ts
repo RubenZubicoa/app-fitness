@@ -27,7 +27,7 @@ export type Exercise = {
   imageUrl?: string;
   /** Explicación técnica de ejecución. */
   explanation?: string;
-  /** Vídeo o recurso opcional de apoyo. */
+  /** Enlace opcional de apoyo (cualquier URL). */
   explanationUrl?: string;
 };
 
